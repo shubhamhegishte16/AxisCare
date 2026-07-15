@@ -34,9 +34,7 @@ export default function Landing() {
         <section className="bg-hero-gradient pt-20 pb-40 relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-8 flex flex-col lg:flex-row items-center justify-between gap-16">
             <div className="flex-1 text-white z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 backdrop-blur-md rounded-full text-sm font-semibold mb-6">
-                <MapPin size={14} />
-                WELCOME TO AXISCARE</div>
+              
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4">
                 Your Health, Our Global Priority.</h1>
               <p className="text-white/90 text-lg mb-8 max-w-lg">
