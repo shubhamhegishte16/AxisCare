@@ -7,6 +7,9 @@ import Appointments from './doctorpanel/Appointments';
 import Prescriptions from './doctorpanel/Prescriptions';
 import NewPrescription from './doctorpanel/NewPrescription';
 import DoctorSettings from './doctorpanel/DoctorSettings';
+import Reports from './doctorpanel/Reports';
+import CreateReport from './doctorpanel/CreateReport';
+import Notifications from './doctorpanel/Notifications';
 import RoleSelect from './RoleSelect';
 
 // Patient Panel
@@ -34,6 +37,9 @@ function App() {
         <Route path="/doctordashboard/prescriptions" element={<Prescriptions />} />
         <Route path="/doctordashboard/new-prescription" element={<NewPrescription />} />
         <Route path="/doctordashboard/settings" element={<DoctorSettings />} />
+        <Route path="/doctordashboard/reports" element={<Reports />} />
+        <Route path="/doctordashboard/create-report" element={<CreateReport />} />
+        <Route path="/doctordashboard/notifications" element={<Notifications />} />
         {/* select role Panel */}
 	<Route path="/role-select" element={<RoleSelect />} />
 

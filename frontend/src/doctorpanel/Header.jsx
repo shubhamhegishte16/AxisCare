@@ -8,7 +8,8 @@ import {
   BarChart2, 
   Bell, 
   Settings, 
-  ChevronDown 
+  ChevronDown,
+  BriefcaseMedical
 } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
 const Header = () => {
@@ -24,11 +25,7 @@ const Header = () => {
     <header className="bg-white border-b border-gray-100 py-3 px-6 flex items-center justify-between sticky top-0 z-50">
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <div className="bg-blue-600 rounded-md p-1 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12h14"/>
-            </svg>
-        </div>
+        <BriefcaseMedical className="w-7 h-7 text-blue-600" />
         <span className="text-xl font-extrabold bg-gradient-to-r from-[#00B9D6] to-[#004AC6] bg-clip-text text-transparent mr-4">
           AxisCare
         </span>
@@ -55,10 +52,10 @@ const Header = () => {
       </nav>
       {/* Right Actions */}
       <div className="flex items-center gap-4">
-        <button className="text-gray-400 hover:text-gray-600 relative">
+        <Link to="/doctordashboard/notifications" className="text-gray-400 hover:text-gray-600 relative transition-colors">
           <Bell className="w-5 h-5" />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
+        </Link>
         <Link to="/doctordashboard/settings" className="text-gray-400 hover:text-gray-600 transition-colors">
           <Settings className="w-5 h-5" />
         </Link>
