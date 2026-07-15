@@ -14,7 +14,6 @@ import {
   MoreVertical,
   Plus
 } from 'lucide-react';
-
 const patientsData = [
   { id: 'P10234', name: 'Rajesh Kumar', age: 56, gender: 'Male', contact: '+91 98765 43210', condition: 'Hypertension', lastVisit: '11 Jul 2026', status: 'Active', img: 'https://i.pravatar.cc/150?img=11' },
   { id: 'P10567', name: 'Priya Mehta', age: 34, gender: 'Female', contact: '+91 87654 32109', condition: 'Chest Pain', lastVisit: '09 Jul 2026', status: 'Active', img: 'https://i.pravatar.cc/150?img=5' },
@@ -25,7 +24,6 @@ const patientsData = [
   { id: 'P11478', name: 'Vikram Singh', age: 39, gender: 'Male', contact: '+91 32109 87654', condition: 'High Cholesterol', lastVisit: '02 Jul 2026', status: 'Inactive', img: 'https://i.pravatar.cc/150?img=33' },
   { id: 'P11590', name: 'Meera Joshi', age: 58, gender: 'Female', contact: '+91 21098 76543', condition: 'Thyroid', lastVisit: '30 Jun 2026', status: 'Active', img: 'https://i.pravatar.cc/150?img=22' },
 ];
-
 const Patients = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -39,7 +37,6 @@ const Patients = () => {
           <button className="flex items-center gap-2 bg-[#00B9D6] text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-[#00a3bd] transition-colors">
             <Plus className="w-4 h-4" />
             Add New Patient</button></div>
-
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <StatCard title="Total Patients" value="248" subtext="All time patients" icon={Users} iconColor="text-blue-500" bgColor="bg-blue-50" />
@@ -47,7 +44,6 @@ const Patients = () => {
           <StatCard title="Active Patients" value="142" subtext="Currently in treatment" icon={Calendar} iconColor="text-purple-500" bgColor="bg-purple-50" />
           <StatCard title="Follow-up Due" value="32" subtext="Need attention" icon={Heart} iconColor="text-yellow-500" bgColor="bg-yellow-50" />
           <StatCard title="Records" value="1,248" subtext="Total medical records" icon={FileText} iconColor="text-green-500" bgColor="bg-green-50" /></div>
-
         {/* Filters & Search */}
         <div className="bg-white p-4 rounded-t-xl border border-gray-200 border-b-0 flex flex-col lg:flex-row items-center gap-4">
           <div className="relative flex-1 w-full">
@@ -85,7 +81,6 @@ const Patients = () => {
             <button className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 whitespace-nowrap">
               <SlidersHorizontal className="w-4 h-4" />
               Filters</button></div></div>
-
         {/* Table */}
         <div className="bg-white border border-gray-200 rounded-b-xl shadow-sm overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -124,7 +119,6 @@ const Patients = () => {
                       <button className="hover:text-gray-600 transition-colors"><MoreVertical className="w-4 h-4" /></button></div></td></tr>
               ))}
             </tbody></table></div>
-
         {/* Pagination */}
         <div className="mt-6 flex items-center justify-between">
           <p className="text-sm text-gray-600 font-medium">Showing 1 to 8 of 248 patients</p>
@@ -140,7 +134,6 @@ const Patients = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"><ChevronRight className="w-4 h-4" /></button></div></div></main></div>
   );
 };
-
 const StatCard = ({ title, value, subtext, icon: Icon, iconColor, bgColor }) => (
   <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
     <div className="flex items-center gap-3">
@@ -151,7 +144,6 @@ const StatCard = ({ title, value, subtext, icon: Icon, iconColor, bgColor }) => 
         <p className="text-2xl font-extrabold text-gray-900 leading-none mt-1">{value}</p></div></div>
     <p className="text-xs text-gray-400 font-medium">{subtext}</p></div>
 );
-
 const StatusBadge = ({ status }) => {
   const getStyles = () => {
     switch (status) {
@@ -165,11 +157,9 @@ const StatusBadge = ({ status }) => {
         return 'bg-gray-100 text-gray-600';
     }
   };
-
   return (
     <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${getStyles()}`}>
       {status}</span>
   );
 };
-
 export default Patients;

@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-
 const appointmentsData = [
   { id: '1', time: '09:00 AM', patient: 'Rajesh Kumar', pid: 'P10234', age: 56, gender: 'Male', reason: 'Follow-up Consultation', subReason: 'Regular checkup', status: 'Completed', type: 'In-Person', img: 'https://i.pravatar.cc/150?img=11' },
   { id: '2', time: '10:00 AM', patient: 'Priya Mehta', pid: 'P10567', age: 34, gender: 'Female', reason: 'Chest Pain', subReason: 'Since 2 days', status: 'Completed', type: 'In-Person', img: 'https://i.pravatar.cc/150?img=5' },
@@ -26,11 +25,9 @@ const appointmentsData = [
   { id: '6', time: '03:00 PM', patient: 'Sneha Kapoor', pid: 'P11345', age: 31, gender: 'Female', reason: 'Palpitations', subReason: 'Occasional dizziness', status: 'Upcoming', type: 'In-Person', img: 'https://i.pravatar.cc/150?img=21' },
   { id: '7', time: '04:30 PM', patient: 'Vikram Singh', pid: 'P11478', age: 39, gender: 'Male', reason: 'BP Check & Consultation', subReason: 'High BP', status: 'Cancelled', type: 'In-Person', img: 'https://i.pravatar.cc/150?img=33' },
 ];
-
 const Appointments = () => {
   const [activeTab, setActiveTab] = useState('All Appointments');
   const tabs = ['All Appointments', 'Today', 'Upcoming', 'Completed', 'Cancelled'];
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <Header />
@@ -39,14 +36,12 @@ const Appointments = () => {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Appointments</h1>
           <p className="text-gray-500 text-sm">Manage and view all your appointments</p></div>
-
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard title="Today's Appointments" value="18" subtext="↑ 20% from yesterday" subtextColor="text-green-500" icon={Calendar} iconColor="text-blue-500" bgColor="bg-blue-50" />
           <StatCard title="Upcoming" value="24" subtext="Next 7 days" icon={Clock} iconColor="text-blue-500" bgColor="bg-blue-50" />
           <StatCard title="Completed" value="156" subtext="This month" icon={CheckCircle2} iconColor="text-green-500" bgColor="bg-green-50" />
           <StatCard title="Cancelled" value="12" subtext="This month" icon={XCircle} iconColor="text-red-500" bgColor="bg-red-50" /></div>
-
         {/* Filters & Search */}
         <div className="bg-white p-4 rounded-t-xl border border-gray-200 border-b-0 flex flex-col xl:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-6 overflow-x-auto w-full xl:w-auto hide-scrollbar border-b border-gray-100 xl:border-none pb-2 xl:pb-0">
@@ -75,7 +70,6 @@ const Appointments = () => {
               All Status <ChevronDown className="w-4 h-4 text-gray-500" /></button>
             <button className="flex items-center justify-center bg-gray-50 border border-gray-200 w-9 h-9 rounded-lg text-gray-700 hover:bg-gray-100 shrink-0">
               <Filter className="w-4 h-4" /></button></div></div>
-
         {/* Table */}
         <div className="bg-white border border-gray-200 rounded-b-xl shadow-sm overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -116,7 +110,6 @@ const Appointments = () => {
                       <button className="hover:text-gray-900 transition-colors"><MoreVertical className="w-5 h-5" /></button></div></td></tr>
               ))}
             </tbody></table></div>
-
         {/* Pagination */}
         <div className="mt-6 flex items-center justify-between">
           <p className="text-sm text-gray-600 font-medium">Showing 1 to 7 of 28 appointments</p>
@@ -129,7 +122,6 @@ const Appointments = () => {
             <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"><ChevronRight className="w-4 h-4" /></button></div></div></main></div>
   );
 };
-
 const StatCard = ({ title, value, subtext, subtextColor = "text-gray-500", icon: Icon, iconColor, bgColor }) => (
   <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-full gap-4">
     <div className="flex items-center gap-3">
@@ -141,7 +133,6 @@ const StatCard = ({ title, value, subtext, subtextColor = "text-gray-500", icon:
         <span className="text-3xl font-extrabold text-gray-900 leading-none">{value}</span>
         <span className={`text-xs font-bold ${subtextColor}`}>{subtext}</span></div></div></div>
 );
-
 const StatusBadge = ({ status }) => {
   const getStyles = () => {
     switch (status) {
@@ -157,11 +148,9 @@ const StatusBadge = ({ status }) => {
         return 'bg-gray-100 text-gray-600';
     }
   };
-
   return (
     <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase ${getStyles()}`}>
       {status}</span>
   );
 };
-
 export default Appointments;

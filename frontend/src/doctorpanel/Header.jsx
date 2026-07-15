@@ -10,8 +10,7 @@ import {
   Settings, 
   ChevronDown 
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
-
+import { NavLink, Link } from 'react-router-dom';
 const Header = () => {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/doctordashboard' },
@@ -21,7 +20,6 @@ const Header = () => {
     { name: 'Lab Requests', icon: FlaskConical, path: '/doctordashboard/lab-requests' },
     { name: 'Reports', icon: BarChart2, path: '/doctordashboard/reports' },
   ];
-
   return (
     <header className="bg-white border-b border-gray-100 py-3 px-6 flex items-center justify-between sticky top-0 z-50">
       {/* Logo */}
@@ -35,7 +33,6 @@ const Header = () => {
           AxisCare
         </span>
       </div>
-
       {/* Navigation */}
       <nav className="hidden lg:flex items-center gap-1">
         {navItems.map((item) => (
@@ -56,19 +53,16 @@ const Header = () => {
           </NavLink>
         ))}
       </nav>
-
       {/* Right Actions */}
       <div className="flex items-center gap-4">
         <button className="text-gray-400 hover:text-gray-600 relative">
           <Bell className="w-5 h-5" />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
         </button>
-        <button className="text-gray-400 hover:text-gray-600">
+        <Link to="/doctordashboard/settings" className="text-gray-400 hover:text-gray-600 transition-colors">
           <Settings className="w-5 h-5" />
-        </button>
-        
+        </Link>
         <div className="h-8 w-px bg-gray-200 mx-2"></div>
-
         <div className="flex items-center gap-3 cursor-pointer group">
           <div className="text-right hidden sm:block group-hover:opacity-80 transition-opacity">
             <p className="text-sm font-bold text-gray-800 leading-tight">Dr. Ananya Sharma</p>
@@ -83,5 +77,4 @@ const Header = () => {
     </header>
   );
 };
-
 export default Header;

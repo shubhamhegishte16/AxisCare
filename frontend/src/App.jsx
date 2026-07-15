@@ -4,6 +4,9 @@ import Landing from './Landing';
 import DoctorDashboard from './doctorpanel/DoctorDashboard';
 import Patients from './doctorpanel/Patients';
 import Appointments from './doctorpanel/Appointments';
+import Prescriptions from './doctorpanel/Prescriptions';
+import NewPrescription from './doctorpanel/NewPrescription';
+import DoctorSettings from './doctorpanel/DoctorSettings';
 import RoleSelect from './RoleSelect';
 
 // Patient Panel
@@ -28,6 +31,9 @@ function App() {
         <Route path="/doctordashboard" element={<DoctorDashboard />} />
         <Route path="/doctordashboard/patients" element={<Patients />} />
         <Route path="/doctordashboard/appointments" element={<Appointments />} />
+        <Route path="/doctordashboard/prescriptions" element={<Prescriptions />} />
+        <Route path="/doctordashboard/new-prescription" element={<NewPrescription />} />
+        <Route path="/doctordashboard/settings" element={<DoctorSettings />} />
         {/* select role Panel */}
 	<Route path="/role-select" element={<RoleSelect />} />
 

@@ -1,186 +1,1 @@
-import React, { useState } from 'react';
-import Header from './Header';
-import { 
-  Calendar, 
-  Users, 
-  Clock, 
-  FlaskConical, 
-  ChevronDown, 
-  Plus, 
-  FileText, 
-  Activity, 
-  Upload, 
-  FileCheck, 
-  UserPlus
-} from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-// --- Data ---
-const patientOverviewData = [
-  { name: 'New', value: 16, color: '#0066FF' },
-  { name: 'Returning', value: 18, color: '#00B9D6' },
-  { name: 'Follow-ups', value: 6, color: '#F59E0B' },
-  { name: 'Others', value: 2, color: '#D1D5DB' },
-];
-const todaysSchedule = [
-  { time: '09:00 AM', name: 'Rajesh Kumar', desc: 'Follow-up Consultation', status: 'COMPLETED', img: 'https://i.pravatar.cc/150?img=11' },
-  { time: '10:00 AM', name: 'Priya Mehta', desc: 'Regular Check-up', status: 'COMPLETED', img: 'https://i.pravatar.cc/150?img=5' },
-  { time: '11:00 AM', name: 'Amit Verma', desc: 'Chest Pain, Breathing Issue', status: 'IN PROGRESS', img: 'https://i.pravatar.cc/150?img=8' },
-];
-const recentPrescriptions = [
-  { name: 'Rajesh Kumar', desc: 'Telmis 40mg, Ecosprin 75mg', img: 'https://i.pravatar.cc/150?img=11' },
-  { name: 'Priya Mehta', desc: 'Amlodipine 5mg, Atorva 10mg', img: 'https://i.pravatar.cc/150?img=5' },
-];
-const pendingLabReports = [
-  { name: 'Amit Verma', desc: 'Lipid Profile, ECG', time: '10:30 AM', img: 'https://i.pravatar.cc/150?img=8' },
-  { name: 'Neha Patil', desc: 'CBC, Thyroid Profile', time: '11:45 AM', img: 'https://i.pravatar.cc/150?img=20' },
-];
-const DoctorDashboard = () => {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      <Header />
-      <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
-        {/* Welcome Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back, Dr. Ananya Sharma 👋</h1>
-            <p className="text-gray-500 text-sm">Here's what's happening with your practice today.</p></div>
-          <button className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
-            <Calendar className="w-4 h-4 text-blue-600" />
-            Friday, 11 July 2026
-            <ChevronDown className="w-4 h-4 text-gray-400" /></button></div>
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard title="TODAY'S APPOINTMENTS" value="18" subtext="↑ 20% from yesterday" icon={Calendar} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="PATIENTS SEEN" value="12" subtext="↑ 10% from yesterday" icon={Users} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="UPCOMING" value="6" subtext="Next: 11:30 AM" icon={Clock} iconColor="text-orange-500" bgColor="bg-orange-50" subtextColor="text-gray-500" />
-          <StatCard title="PENDING LAB REPORTS" value="4" subtext="View and upload" icon={FlaskConical} iconColor="text-red-500" bgColor="bg-red-50" subtextColor="text-gray-500" /></div>
-        {/* Main Grid Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Column 1: Today's Schedule */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-base font-bold text-gray-900">Today's Schedule</h2>
-              <button className="text-blue-600 text-sm font-semibold hover:underline">View Calendar +</button></div>
-            <div className="p-5 flex-1 relative">
-                {/* Vertical timeline line */}
-                <div className="absolute left-[39px] top-6 bottom-6 w-px bg-gray-200 z-0"></div>
-               <div className="flex flex-col gap-6 relative z-10">
-                    {todaysSchedule.map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-4">
-                            <div className="w-16 text-xs font-semibold text-gray-500 pt-1 shrink-0">{item.time}</div>
-                            <div className={`flex-1 border rounded-lg p-3 flex items-center justify-between bg-white ${item.status === 'IN PROGRESS' ? 'border-blue-300 shadow-sm' : 'border-gray-100'}`}>
-                                <div className="flex items-center gap-3">
-                                    <img src={item.img} alt={item.name} className="w-10 h-10 rounded-full object-cover bg-gray-100" />
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-900 leading-tight">{item.name}</p>
-                                        <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p></div></div>
-                                <div>
-                                    {item.status === 'COMPLETED' ? (
-                                        <span className="text-[10px] font-bold text-green-600 tracking-wide">COMPLETED</span>
-                                    ) : (
-                                        <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">IN PROGRESS</span>
-                                    )}</div></div></div>
-                    ))}</div></div>
-            <div className="p-4 bg-gray-50 border-t border-gray-100 rounded-b-xl text-center">
-              <button className="text-sm font-semibold text-blue-600 hover:underline">View All Appointments</button></div></div>
-          {/* Column 2: Patient Overview */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
-            <div className="p-5 flex items-center justify-between">
-              <h2 className="text-base font-bold text-gray-900">Patient Overview</h2>
-              <button className="flex items-center gap-1 text-xs font-semibold text-gray-600 border border-gray-200 px-2 py-1 rounded">
-                This Week <ChevronDown className="w-3 h-3" /></button></div>
-           <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-               <div className="h-48 w-full relative">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={patientOverviewData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {patientOverviewData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}</Pie></PieChart></ResponsiveContainer>
-                  {/* Center Text */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                     <span className="text-3xl font-extrabold text-blue-500">42</span>
-                     <span className="text-xs font-medium text-gray-500">Total Patients</span></div></div>
-             {/* Legend */}
-               <div className="w-full mt-6 grid grid-cols-2 gap-y-3 gap-x-2 text-xs">
-                  {patientOverviewData.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
-                              <span className="text-gray-600 font-medium">{item.name}</span></div>
-                          <span className="font-semibold text-gray-900">
-                             {item.value} <span className="text-gray-400 font-normal">({Math.round((item.value / 42) * 100)}%)</span></span></div>
-                  ))}</div></div>        
-            <div className="p-4 border-t border-gray-100 text-center">
-              <button className="text-sm font-semibold text-blue-600 hover:underline">View All Patients →</button></div></div>
-          {/* Column 3: Recent Activity (Prescriptions & Lab) */}
-          <div className="flex flex-col gap-6">
-             {/* Recent Prescriptions */}
-             <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 flex flex-col">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                    <h2 className="text-base font-bold text-gray-900">Recent Prescriptions</h2>
-                    <button className="text-blue-600 text-xs font-semibold hover:underline">View All</button></div>
-                <div className="p-4 flex flex-col gap-4">
-                    {recentPrescriptions.map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-3">
-                            <div className="bg-gray-100 p-2 rounded-lg text-gray-500 shrink-0">
-                                <FileText className="w-5 h-5" /></div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p></div>
-                            <div className="text-xs text-gray-400 font-medium">Just Now</div></div>
-                    ))}</div></div>
-             {/* Pending Lab Reports */}
-             <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 flex flex-col">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                    <h2 className="text-base font-bold text-gray-900">Pending Lab Reports</h2>
-                    <button className="text-blue-600 text-xs font-semibold hover:underline">View All</button></div>
-                <div className="p-4 flex flex-col gap-4">
-                    {pendingLabReports.map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-3">
-                            <div className="bg-gray-100 p-2 rounded-lg text-gray-500 shrink-0">
-                                <FlaskConical className="w-5 h-5" /></div>
-                            <div className="flex-1">
-                                <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p></div>
-                            <div className="text-xs text-red-500 font-bold">{item.time}</div></div>
-                    ))}</div></div></div></div>
-        {/* Quick Actions */}
-        <div>
-          <h2 className="text-base font-bold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <QuickActionButton icon={Plus} label="New Consultation" />
-            <QuickActionButton icon={FileText} label="Add Prescription" />
-            <QuickActionButton icon={Activity} label="Order Lab Test" />
-            <QuickActionButton icon={Upload} label="Upload Report" />
-            <QuickActionButton icon={FileCheck} label="Generate Certificate" />
-            <QuickActionButton icon={UserPlus} label="Add Follow-up" /></div></div></main></div>
-
-  );
-};
-const StatCard = ({ title, value, subtext, icon: Icon, iconColor, bgColor, subtextColor = "text-green-600" }) => (
-  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${bgColor}`}>
-          <Icon className={`w-4 h-4 ${iconColor}`} /></div>
-        <h3 className="text-xs font-bold text-gray-500 tracking-wide">{title}</h3></div>
-      <div className="flex items-end gap-3">
-        <span className="text-3xl font-extrabold text-blue-600 leading-none">{value}</span></div>
-      <p className={`text-xs font-semibold mt-2 ${subtextColor}`}>{subtext}</p></div></div>
-);
-const QuickActionButton = ({ icon: Icon, label }) => (
-  <button className="bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all rounded-xl p-4 flex flex-col items-center justify-center gap-3 text-gray-700 hover:text-blue-600 group">
-    <Icon className="w-6 h-6 text-blue-600 group-hover:scale-110 transition-transform" />
-    <span className="text-xs font-bold text-center">{label}</span></button>
-);
-export default DoctorDashboard;
+import React, { useState } from 'react';import Header from './Header';import {   Calendar,   Users,   Clock,   FlaskConical,   ChevronDown,   Plus,   FileText,   Activity,   Upload,   FileCheck,   UserPlus} from 'lucide-react';import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';// --- Data ---const patientOverviewData = [  { name: 'New', value: 16, color: '#0066FF' },  { name: 'Returning', value: 18, color: '#00B9D6' },  { name: 'Follow-ups', value: 6, color: '#F59E0B' },  { name: 'Others', value: 2, color: '#D1D5DB' },];const todaysSchedule = [  { time: '09:00 AM', name: 'Rajesh Kumar', desc: 'Follow-up Consultation', status: 'COMPLETED', img: 'https://i.pravatar.cc/150?img=11' },  { time: '10:00 AM', name: 'Priya Mehta', desc: 'Regular Check-up', status: 'COMPLETED', img: 'https://i.pravatar.cc/150?img=5' },  { time: '11:00 AM', name: 'Amit Verma', desc: 'Chest Pain, Breathing Issue', status: 'IN PROGRESS', img: 'https://i.pravatar.cc/150?img=8' },];const recentPrescriptions = [  { name: 'Rajesh Kumar', desc: 'Telmis 40mg, Ecosprin 75mg', img: 'https://i.pravatar.cc/150?img=11' },  { name: 'Priya Mehta', desc: 'Amlodipine 5mg, Atorva 10mg', img: 'https://i.pravatar.cc/150?img=5' },];const pendingLabReports = [  { name: 'Amit Verma', desc: 'Lipid Profile, ECG', time: '10:30 AM', img: 'https://i.pravatar.cc/150?img=8' },  { name: 'Neha Patil', desc: 'CBC, Thyroid Profile', time: '11:45 AM', img: 'https://i.pravatar.cc/150?img=20' },];const DoctorDashboard = () => {  return (    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">      <Header />      <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">        {/* Welcome Section */}        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">          <div>            <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back, Dr. Ananya Sharma 👋</h1>            <p className="text-gray-500 text-sm">Here's what's happening with your practice today.</p></div>          <button className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">            <Calendar className="w-4 h-4 text-blue-600" />            Friday, 11 July 2026            <ChevronDown className="w-4 h-4 text-gray-400" /></button></div>        {/* Stats Row */}        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">          <StatCard title="TODAY'S APPOINTMENTS" value="18" subtext="↑ 20% from yesterday" icon={Calendar} iconColor="text-blue-600" bgColor="bg-blue-50" />          <StatCard title="PATIENTS SEEN" value="12" subtext="↑ 10% from yesterday" icon={Users} iconColor="text-blue-600" bgColor="bg-blue-50" />          <StatCard title="UPCOMING" value="6" subtext="Next: 11:30 AM" icon={Clock} iconColor="text-orange-500" bgColor="bg-orange-50" subtextColor="text-gray-500" />          <StatCard title="PENDING LAB REPORTS" value="4" subtext="View and upload" icon={FlaskConical} iconColor="text-red-500" bgColor="bg-red-50" subtextColor="text-gray-500" /></div>        {/* Main Grid Content */}        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">          {/* Column 1: Today's Schedule */}          <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">            <div className="p-5 border-b border-gray-100 flex items-center justify-between">              <h2 className="text-base font-bold text-gray-900">Today's Schedule</h2>              <button className="text-blue-600 text-sm font-semibold hover:underline">View Calendar +</button></div>            <div className="p-5 flex-1 relative">                {/* Vertical timeline line */}                <div className="absolute left-[39px] top-6 bottom-6 w-px bg-gray-200 z-0"></div>               <div className="flex flex-col gap-6 relative z-10">                    {todaysSchedule.map((item, idx) => (                        <div key={idx} className="flex items-start gap-4">                            <div className="w-16 text-xs font-semibold text-gray-500 pt-1 shrink-0">{item.time}</div>                            <div className={`flex-1 border rounded-lg p-3 flex items-center justify-between bg-white ${item.status === 'IN PROGRESS' ? 'border-blue-300 shadow-sm' : 'border-gray-100'}`}>                                <div className="flex items-center gap-3">                                    <img src={item.img} alt={item.name} className="w-10 h-10 rounded-full object-cover bg-gray-100" />                                    <div>                                        <p className="text-sm font-bold text-gray-900 leading-tight">{item.name}</p>                                        <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p></div></div>                                <div>                                    {item.status === 'COMPLETED' ? (                                        <span className="text-[10px] font-bold text-green-600 tracking-wide">COMPLETED</span>                                    ) : (                                        <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">IN PROGRESS</span>                                    )}</div></div></div>                    ))}</div></div>            <div className="p-4 bg-gray-50 border-t border-gray-100 rounded-b-xl text-center">              <button className="text-sm font-semibold text-blue-600 hover:underline">View All Appointments</button></div></div>          {/* Column 2: Patient Overview */}          <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">            <div className="p-5 flex items-center justify-between">              <h2 className="text-base font-bold text-gray-900">Patient Overview</h2>              <button className="flex items-center gap-1 text-xs font-semibold text-gray-600 border border-gray-200 px-2 py-1 rounded">                This Week <ChevronDown className="w-3 h-3" /></button></div>           <div className="flex-1 flex flex-col items-center justify-center p-6 relative">               <div className="h-48 w-full relative">                 <ResponsiveContainer width="100%" height="100%">                    <PieChart>                      <Pie                        data={patientOverviewData}                        cx="50%"                        cy="50%"                        innerRadius={60}                        outerRadius={80}                        paddingAngle={2}                        dataKey="value"                        stroke="none"                      >                        {patientOverviewData.map((entry, index) => (                          <Cell key={`cell-${index}`} fill={entry.color} />                        ))}</Pie></PieChart></ResponsiveContainer>                  {/* Center Text */}                  <div className="absolute inset-0 flex flex-col items-center justify-center">                     <span className="text-3xl font-extrabold text-blue-500">42</span>                     <span className="text-xs font-medium text-gray-500">Total Patients</span></div></div>             {/* Legend */}               <div className="w-full mt-6 grid grid-cols-2 gap-y-3 gap-x-2 text-xs">                  {patientOverviewData.map((item, idx) => (                      <div key={idx} className="flex items-center justify-between">                          <div className="flex items-center gap-1.5">                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>                              <span className="text-gray-600 font-medium">{item.name}</span></div>                          <span className="font-semibold text-gray-900">                             {item.value} <span className="text-gray-400 font-normal">({Math.round((item.value / 42) * 100)}%)</span></span></div>                  ))}</div></div>                    <div className="p-4 border-t border-gray-100 text-center">              <button className="text-sm font-semibold text-blue-600 hover:underline">View All Patients →</button></div></div>          {/* Column 3: Recent Activity (Prescriptions & Lab) */}          <div className="flex flex-col gap-6">             {/* Recent Prescriptions */}             <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 flex flex-col">                <div className="p-4 border-b border-gray-100 flex items-center justify-between">                    <h2 className="text-base font-bold text-gray-900">Recent Prescriptions</h2>                    <button className="text-blue-600 text-xs font-semibold hover:underline">View All</button></div>                <div className="p-4 flex flex-col gap-4">                    {recentPrescriptions.map((item, idx) => (                        <div key={idx} className="flex items-start gap-3">                            <div className="bg-gray-100 p-2 rounded-lg text-gray-500 shrink-0">                                <FileText className="w-5 h-5" /></div>                            <div className="flex-1">                                <p className="text-sm font-bold text-gray-900">{item.name}</p>                                <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p></div>                            <div className="text-xs text-gray-400 font-medium">Just Now</div></div>                    ))}</div></div>             {/* Pending Lab Reports */}             <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 flex flex-col">                <div className="p-4 border-b border-gray-100 flex items-center justify-between">                    <h2 className="text-base font-bold text-gray-900">Pending Lab Reports</h2>                    <button className="text-blue-600 text-xs font-semibold hover:underline">View All</button></div>                <div className="p-4 flex flex-col gap-4">                    {pendingLabReports.map((item, idx) => (                        <div key={idx} className="flex items-start gap-3">                            <div className="bg-gray-100 p-2 rounded-lg text-gray-500 shrink-0">                                <FlaskConical className="w-5 h-5" /></div>                            <div className="flex-1">                                <p className="text-sm font-bold text-gray-900">{item.name}</p>                                <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p></div>                            <div className="text-xs text-red-500 font-bold">{item.time}</div></div>                    ))}</div></div></div></div>        {/* Quick Actions */}        <div>          <h2 className="text-base font-bold text-gray-900 mb-4">Quick Actions</h2>          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">            <QuickActionButton icon={Plus} label="New Consultation" />            <QuickActionButton icon={FileText} label="Add Prescription" />            <QuickActionButton icon={Activity} label="Order Lab Test" />            <QuickActionButton icon={Upload} label="Upload Report" />            <QuickActionButton icon={FileCheck} label="Generate Certificate" />            <QuickActionButton icon={UserPlus} label="Add Follow-up" /></div></div></main></div>  );};const StatCard = ({ title, value, subtext, icon: Icon, iconColor, bgColor, subtextColor = "text-green-600" }) => (  <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">    <div>      <div className="flex items-center gap-2 mb-3">        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${bgColor}`}>          <Icon className={`w-4 h-4 ${iconColor}`} /></div>        <h3 className="text-xs font-bold text-gray-500 tracking-wide">{title}</h3></div>      <div className="flex items-end gap-3">        <span className="text-3xl font-extrabold text-blue-600 leading-none">{value}</span></div>      <p className={`text-xs font-semibold mt-2 ${subtextColor}`}>{subtext}</p></div></div>);const QuickActionButton = ({ icon: Icon, label }) => (  <button className="bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all rounded-xl p-4 flex flex-col items-center justify-center gap-3 text-gray-700 hover:text-blue-600 group">    <Icon className="w-6 h-6 text-blue-600 group-hover:scale-110 transition-transform" />    <span className="text-xs font-bold text-center">{label}</span></button>);export default DoctorDashboard;
