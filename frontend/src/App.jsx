@@ -8,6 +8,14 @@ import PatientDashboard from './PatientPanel/PatientDashboard.jsx';
 import PatientProfile from './PatientPanel/PatientProfile.jsx';
 import PatientMedical from './PatientPanel/PatientMedical.jsx';
 
+// Pharmacist Panel
+import PharmacyLogin from './PharmacistPanel/PharmacyLogin.jsx';
+import PharmacyRegister from './PharmacistPanel/PharmacyRegister.jsx';
+import PharmacyForgotPassword from './PharmacistPanel/PharmacyForgotPassword.jsx';
+import PharmacyResetPassword from './PharmacistPanel/PharmacyResetPassword.jsx';
+import PharmacyDashboard from './PharmacistPanel/PharmacyDashboard.jsx';
+import Medicines from './PharmacistPanel/Medicines.jsx';
+
 function App() {
   return (
     <Router>
@@ -21,6 +29,15 @@ function App() {
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
         <Route path="/patient-profile" element={<PatientProfile />} />
         <Route path='/patient-history' element={<PatientMedical />} />
+
+        {/* Pharmacist Panel */}
+        <Route path="/pharmacy/login" element={<PharmacyLogin />} />
+        <Route path="/pharmacy/register" element={<PharmacyRegister />} />
+        <Route path="/pharmacy/forgot-password" element={<PharmacyForgotPassword />} />
+        <Route path="/pharmacy/reset-password" element={<PharmacyResetPassword />} />
+        <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
+        <Route path="/pharmacy/medicines" element={<Medicines />} />
+        <Route path="/pharmacy" element={<Navigate to="/pharmacy/login" replace />} />
 
       </Routes>
     </Router>
