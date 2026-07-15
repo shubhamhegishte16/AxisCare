@@ -1,0 +1,86 @@
+import React from 'react';
+import { 
+  LayoutDashboard, 
+  Calendar, 
+  Users, 
+  FileText, 
+  FlaskConical, 
+  BarChart2, 
+  Bell, 
+  Settings, 
+  ChevronDown 
+} from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+
+const Header = () => {
+  const navItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/doctor/dashboard' },
+    { name: 'Appointments', icon: Calendar, path: '/doctor/appointments' },
+    { name: 'Patients', icon: Users, path: '/doctor/patients' },
+    { name: 'Prescriptions', icon: FileText, path: '/doctor/prescriptions' },
+    { name: 'Lab Requests', icon: FlaskConical, path: '/doctor/lab-requests' },
+    { name: 'Reports', icon: BarChart2, path: '/doctor/reports' },
+  ];
+
+  return (
+    <header className="bg-white border-b border-gray-100 py-3 px-6 flex items-center justify-between sticky top-0 z-50">
+      {/* Logo */}
+      <div className="flex items-center gap-2">
+        <div className="bg-blue-600 rounded-md p-1 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+        </div>
+        <span className="text-xl font-extrabold bg-gradient-to-r from-[#00B9D6] to-[#004AC6] bg-clip-text text-transparent mr-4">
+          AxisCare
+        </span>
+      </div>
+
+      {/* Navigation */}
+      <nav className="hidden lg:flex items-center gap-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.name}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                item.name === 'Dashboard' // Using static match for dashboard
+                  ? 'bg-[#00B9D6] text-white shadow-sm'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+              }`
+            }
+          >
+            <item.icon className="w-4 h-4" />
+            {item.name}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Right Actions */}
+      <div className="flex items-center gap-4">
+        <button className="text-gray-400 hover:text-gray-600 relative">
+          <Bell className="w-5 h-5" />
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+        </button>
+        <button className="text-gray-400 hover:text-gray-600">
+          <Settings className="w-5 h-5" />
+        </button>
+        
+        <div className="h-8 w-px bg-gray-200 mx-2"></div>
+
+        <div className="flex items-center gap-3 cursor-pointer group">
+          <div className="text-right hidden sm:block group-hover:opacity-80 transition-opacity">
+            <p className="text-sm font-bold text-gray-800 leading-tight">Dr. Ananya Sharma</p>
+            <p className="text-xs text-gray-500 font-medium leading-tight">Cardiologist</p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm">
+             <img src="https://i.pravatar.cc/150?img=32" alt="Dr. Ananya" className="w-full h-full object-cover" />
+          </div>
+          <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
