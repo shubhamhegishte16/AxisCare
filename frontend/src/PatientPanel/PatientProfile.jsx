@@ -16,11 +16,9 @@ export default function PatientProfile() {
 
   const [activeTab, setActiveTab] = useState('profile');
 
-  // Edit/View toggle states
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingInsurance, setIsEditingInsurance] = useState(false);
   
-  // Profile Data State
   const [profileData, setProfileData] = useState({
     firstName: 'John',
     lastName: 'S',
@@ -37,10 +35,8 @@ export default function PatientProfile() {
     accountStatus: 'Active Verified Account'
   });
 
-  // Temporary buffers for form editing
   const [profileBuffer, setProfileBuffer] = useState({ ...profileData });
 
-  // Insurance Data State
   const [insuranceData, setInsuranceData] = useState({
     provider: 'ABC Health Insurance',
     policyNumber: 'POL-8837492-X',
@@ -51,7 +47,6 @@ export default function PatientProfile() {
   });
   const [insuranceBuffer, setInsuranceBuffer] = useState({ ...insuranceData });
 
-  // Security Form State
   const [securityData, setSecurityData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -59,31 +54,26 @@ export default function PatientProfile() {
   });
   const [securityMessage, setSecurityMessage] = useState({ type: '', text: '' });
 
-  // Save profile updates
   const handleSaveProfile = () => {
     setProfileData({ ...profileBuffer });
     setIsEditingProfile(false);
   };
 
-  // Cancel profile updates
   const handleCancelProfile = () => {
     setProfileBuffer({ ...profileData });
     setIsEditingProfile(false);
   };
 
-  // Save insurance updates
   const handleSaveInsurance = () => {
     setInsuranceData({ ...insuranceBuffer });
     setIsEditingInsurance(false);
   };
 
-  // Cancel insurance updates
   const handleCancelInsurance = () => {
     setInsuranceBuffer({ ...insuranceData });
     setIsEditingInsurance(false);
   };
 
-  // Password reset handler
   const handlePasswordChange = (e) => {
     e.preventDefault();
     if (!securityData.currentPassword || !securityData.newPassword || !securityData.confirmPassword) {
@@ -95,11 +85,10 @@ export default function PatientProfile() {
       return;
     }
     
-    // Simulate API logic
-    setSecurityMessage({ type: 'success', text: 'Password updated successfully!' });
-    setSecurityData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    // setSecurityMessage({ type: 'success', text: 'Password updated successfully!' });
+    // setSecurityData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     
-    setTimeout(() => setSecurityMessage({ type: '', text: '' }), 4000);
+    // setTimeout(() => setSecurityMessage({ type: '', text: '' }), 4000);
   };
 
   return (
@@ -107,10 +96,8 @@ export default function PatientProfile() {
       
       <Navbar />
 
-      {/* MAIN LAYOUT */}
       <main className="max-w-6xl mx-auto px-6 py-8">
         
-        {/* SUB-TABS INTERFACE */}
         <div className="flex flex-wrap gap-4 mb-8">
           <button 
             onClick={() => setActiveTab('profile')}
@@ -144,10 +131,8 @@ export default function PatientProfile() {
           </button>
         </div>
 
-        {/* PROFILE OVERVIEW & VARIABLE CONTENT SECTION */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mb-12">
           
-          {/* Constant Left Side Summary Card */}
           <div className="bg-white rounded-xl shadow-md border border-slate-100 p-6 flex flex-col items-center">
             <span className="text-xs font-semibold text-blue-400 self-start mb-4">Patient Pass No.: {profileData.patientPassNo}</span>
             
@@ -191,10 +176,8 @@ export default function PatientProfile() {
             </div>
           </div>
 
-          {/* Dynamic Right Side Container based on chosen active Tab */}
           <div className="lg:col-span-2 bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-dashed border-slate-200 min-h-[400px]">
             
-            {/* VIEW A: PROFILE TAB DYNAMICS */}
             {activeTab === 'profile' && (
               <div>
                 <div className="flex justify-between items-center mb-6">
@@ -274,7 +257,6 @@ export default function PatientProfile() {
               </div>
             )}
 
-            {/* VIEW B: INSURANCE DETAILS TAB DYNAMICS */}
             {activeTab === 'insurance' && (
               <div>
                 <div className="flex justify-between items-center mb-6">
@@ -357,7 +339,6 @@ export default function PatientProfile() {
               </div>
             )}
 
-            {/* VIEW C: SECURITY & LOGIN TAB DYNAMICS (PASSWORD SYSTEM) */}
             {activeTab === 'security' && (
               <div>
                 <div className="flex items-center gap-2 mb-6">
@@ -422,7 +403,6 @@ export default function PatientProfile() {
           </div>
         </div>
 
-        {/* EMERGENCY CONTACTS GRID CONTAINER */}
         <section className="mt-12 border-t border-slate-200 pt-8">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-blue-900">Emergency Contacts:</h3>
@@ -467,7 +447,6 @@ export default function PatientProfile() {
               </div>
             </div>
 
-            {/* Card 2 */}
             <div className="bg-white rounded-xl shadow-md border border-slate-100 p-6 space-y-4">
               <h4 className="text-md font-bold text-blue-800">Secondary Contact</h4>
               <p className="text-lg font-black text-blue-900">Bucen Lee</p>
