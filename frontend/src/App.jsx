@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './Landing';
 import DoctorDashboard from './doctorpanel/DoctorDashboard';
+import RoleSelect from './RoleSelect';
 
 // Patient Panel
 import PatientDashboard from './PatientPanel/PatientDashboard.jsx';
@@ -23,6 +24,8 @@ function App() {
         <Route path="/" element={<Landing />} />
         {/* Redirecting to dashboard for any doctor path for now */}
         <Route path="/doctordashboard/*" element={<DoctorDashboard />} />
+        {/* select role Panel */}
+	<Route path="/role-select" element={<RoleSelect />} />
 
 
         {/* Patient Panel */}
