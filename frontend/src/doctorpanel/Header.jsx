@@ -14,12 +14,12 @@ import { NavLink } from 'react-router-dom';
 
 const Header = () => {
   const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/doctor/dashboard' },
-    { name: 'Appointments', icon: Calendar, path: '/doctor/appointments' },
-    { name: 'Patients', icon: Users, path: '/doctor/patients' },
-    { name: 'Prescriptions', icon: FileText, path: '/doctor/prescriptions' },
-    { name: 'Lab Requests', icon: FlaskConical, path: '/doctor/lab-requests' },
-    { name: 'Reports', icon: BarChart2, path: '/doctor/reports' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/doctordashboard' },
+    { name: 'Appointments', icon: Calendar, path: '/doctordashboard/appointments' },
+    { name: 'Patients', icon: Users, path: '/doctordashboard/patients' },
+    { name: 'Prescriptions', icon: FileText, path: '/doctordashboard/prescriptions' },
+    { name: 'Lab Requests', icon: FlaskConical, path: '/doctordashboard/lab-requests' },
+    { name: 'Reports', icon: BarChart2, path: '/doctordashboard/reports' },
   ];
 
   return (
@@ -42,9 +42,10 @@ const Header = () => {
           <NavLink
             key={item.name}
             to={item.path}
+            end={item.path === '/doctordashboard'}
             className={({ isActive }) =>
               `flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                item.name === 'Dashboard' // Using static match for dashboard
+                isActive
                   ? 'bg-[#00B9D6] text-white shadow-sm'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
               }`
