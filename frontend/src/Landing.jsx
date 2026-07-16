@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Stethoscope, 
   MapPin, 
@@ -10,9 +11,13 @@ import {
   ShieldCheck,
   Globe,
   Share2,
-  Send
+  Send,
+  Menu,
+  X
 } from 'lucide-react';
 export default function Landing() {
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
       <header className="bg-white py-4 sticky top-0 z-50 shadow-sm">
@@ -27,9 +32,33 @@ export default function Landing() {
             <a href="#" className="font-medium text-[0.95rem] transition-colors hover:text-primary">About</a>
             <a href="#" className="font-medium text-[0.95rem] transition-colors hover:text-primary">Contact</a></nav>
           <div className="hidden md:flex items-center gap-6">
-            <a href="#" className="font-semibold text-primary">Login</a>
-            <button className="bg-primary text-white px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-primary-dark">
-              Make Appointment</button></div></div></header>
+            <button onClick={() => navigate('/role-select')} className="font-semibold text-primary">Login</button>
+            <button onClick={() => navigate('/pharmacy/register')} className="bg-primary text-white px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-primary-dark">
+              Make Appointment</button></div>
+          <button
+            className="md:hidden text-slate-700 p-2"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X size={26} /> : <Menu size={26} />}
+          </button></div>
+        {menuOpen && (
+          <div className="md:hidden border-t border-slate-100 bg-white">
+            <nav className="max-w-7xl mx-auto px-8 py-4 flex flex-col gap-4">
+              <a href="#" className="font-medium text-[0.95rem] text-primary">Home</a>
+              <a href="#" className="font-medium text-[0.95rem] hover:text-primary">Services</a>
+              <a href="#" className="font-medium text-[0.95rem] hover:text-primary">Doctors</a>
+              <a href="#" className="font-medium text-[0.95rem] hover:text-primary">About</a>
+              <a href="#" className="font-medium text-[0.95rem] hover:text-primary">Contact</a>
+              <div className="flex flex-col gap-3 pt-2 border-t border-slate-100">
+                <button onClick={() => navigate('/role-select')} className="font-semibold text-primary text-left">Login</button>
+                <button onClick={() => navigate('/pharmacy/register')} className="bg-primary text-white px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-primary-dark">
+                  Make Appointment</button>
+              </div>
+            </nav>
+          </div>
+        )}</header>
       <main className="flex-1">
         <section className="bg-hero-gradient pt-20 pb-40 relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-8 flex flex-col lg:flex-row items-center justify-between gap-16">
@@ -40,10 +69,10 @@ export default function Landing() {
               <p className="text-white/90 text-lg mb-8 max-w-lg">
                 Leading-edge hospital management designed for modern clinical excellence. We unify patient care, administrative efficiency, and advanced medical expertise.</p>
            <div className="flex flex-wrap gap-4">
-                <button className="bg-white text-primary px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-slate-100">
+                <button onClick={() => navigate('/pharmacy/register')} className="bg-white text-primary px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-slate-100">
                   Book an Appointment</button>
-                <button className="bg-transparent border border-white text-white px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-white/10">
-                  View Services</button></div></div>
+                <a href="#specializations" className="bg-transparent border border-white text-white px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-white/10 inline-flex items-center">
+                  View Services</a></div></div>
    <div className="flex-1 relative z-0 flex justify-end">
               <div className="relative">
                 <img src="/1st image doctor.jpg" alt="Doctor smiling" className="rounded-3xl w-full max-w-[480px] shadow-2xl object-cover" />
@@ -74,7 +103,7 @@ export default function Landing() {
                 <h3 className="text-xl font-semibold text-slate-800 mb-2">Covid-19 Information</h3>
                 <p className="text-slate-500 text-sm mb-6 min-h-[80px]">Stay informed with the latest vaccination updates, testing protocols, and safety guidelines from our clinical health department.</p>
                 <a href="#" className="text-primary font-semibold text-sm flex items-center gap-2 hover:gap-3 transition-all">Latest updates &rarr;</a></div></div></div></section>
-      <section className="py-16 bg-slate-50">
+      <section id="specializations" className="py-16 bg-slate-50 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-8">
             <div className="text-center mb-16">
               <span className="text-primary font-semibold text-sm uppercase tracking-wider mb-2 block">OUR SPECIALIZATIONS</span>
@@ -130,8 +159,8 @@ export default function Landing() {
            <div className="lg:col-span-2">
               <h4 className="text-[1.1rem] font-semibold mb-6">Stay Informed</h4>
               <p className="text-white/80 text-[0.9rem] mb-4">Receive monthly health tips and hospital updates.</p>
-              <form className="flex mt-2">
-                <input type="email" placeholder="Your email" className="px-4 py-3 bg-black/10 border border-white/20 rounded-l-md text-white placeholder-white/60 focus:outline-none w-full" />
+              <form className="flex mt-2" onSubmit={(e) => e.preventDefault()}>
+                <input type="email" placeholder="Your email" required className="px-4 py-3 bg-black/10 border border-white/20 rounded-l-md text-white placeholder-white/60 focus:outline-none w-full" />
                 <button type="submit" className="bg-primary px-4 rounded-r-md flex items-center justify-center">
                   <Send size={18} /></button></form></div></div>
              <div className="border-t border-white/10 pt-6 text-center text-white/60 text-sm">

@@ -10,12 +10,12 @@ import {
 } from 'lucide-react';
 
 const roles = [
-  { key: 'admin', label: 'Admin', icon: ShieldCheck, path: '/admin' },
-  { key: 'doctor', label: 'Doctor', icon: Stethoscope, path: '/doctordashboard' },
-  { key: 'receptionist', label: 'Receptionist', icon: Headset, path: '/receptionist' },
-  { key: 'patient', label: 'Patient', icon: User, path: '/patient-dashboard' },
-  { key: 'lab', label: 'Laboratory Staff', icon: FlaskConical, path: '/lab' },
-  { key: 'pharmacist', label: 'Pharmacist', icon: Pill, path: '/pharmacist' },
+  { key: 'admin', label: 'Admin', icon: ShieldCheck, authPath: 'admin' },
+  { key: 'doctor', label: 'Doctor', icon: Stethoscope, authPath: 'doctor' },
+  { key: 'receptionist', label: 'Receptionist', icon: Headset, authPath: 'receptionist' },
+  { key: 'patient', label: 'Patient', icon: User, authPath: 'patient' },
+  { key: 'lab', label: 'Laboratory Staff', icon: FlaskConical, authPath: 'lab' },
+  { key: 'pharmacist', label: 'Pharmacist', icon: Pill, authPath: 'pharmacy' },
 ];
 
 export default function RoleSelect() {
@@ -35,10 +35,10 @@ export default function RoleSelect() {
       </div>
 
       <div className="w-full max-w-3xl grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-        {roles.map(({ key, label, icon: Icon, path }) => (
+        {roles.map(({ key, label, icon: Icon, authPath }) => (
           <button
             key={key}
-            onClick={() => navigate(path)}
+            onClick={() => navigate(`/${authPath}/login`)}
             className="group flex flex-col items-center justify-center gap-4 rounded-3xl bg-[#dbe6fb] hover:bg-[#cfdefa] shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 aspect-square p-4 sm:p-6 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1d4ed8]/40"
           >
             <span className="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20">

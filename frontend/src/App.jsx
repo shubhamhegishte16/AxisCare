@@ -11,6 +11,8 @@ import Reports from './doctorpanel/Reports';
 import CreateReport from './doctorpanel/CreateReport';
 import Notifications from './doctorpanel/Notifications';
 import RoleSelect from './RoleSelect';
+import RoleLogin from './shared/RoleLogin';
+import RoleRegister from './shared/RoleRegister';
 
 // Patient Panel
 import PatientDashboard from './PatientPanel/PatientDashboard.jsx';
@@ -63,6 +65,10 @@ function App() {
         <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
         <Route path="/pharmacy/medicines" element={<Medicines />} />
         <Route path="/pharmacy" element={<Navigate to="/pharmacy/login" replace />} />
+
+        {/* Generic role login/register (admin, doctor, receptionist, patient, lab) */}
+        <Route path="/:role/login" element={<RoleLogin />} />
+        <Route path="/:role/register" element={<RoleRegister />} />
 
       </Routes>
     </Router>
