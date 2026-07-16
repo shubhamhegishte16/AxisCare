@@ -14,7 +14,7 @@ const RoleLogin = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
     if (!form.emailOrPhone) newErrors.emailOrPhone = 'Email or phone is required';
@@ -23,11 +23,25 @@ const RoleLogin = () => {
     if (Object.keys(newErrors).length) return;
 
     setLoading(true);
-    // Mock auth — replace with real API call later
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: form.emailOrPhone, password: form.password })
+      });
+      const data = await response.json();
+      if (data.success) {
+        navigate(dashboard);
+      } else {
+        setErrors({ ...newErrors, emailOrPhone: data.message });
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      setErrors({ ...newErrors, emailOrPhone: "Server error during login" });
+    } finally {
       setLoading(false);
-      navigate(dashboard);
-    }, 700);
+    }
   };
 
   return (

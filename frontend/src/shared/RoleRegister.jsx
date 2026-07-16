@@ -19,7 +19,7 @@ const RoleRegister = () => {
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
     if (!form.fullName) newErrors.fullName = 'Full name is required';
@@ -32,11 +32,32 @@ const RoleRegister = () => {
     if (Object.keys(newErrors).length) return;
 
     setLoading(true);
-    // Mock registration — replace with real API call later
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: form.fullName,
+          email: form.email,
+          phone: form.phone,
+          password: form.password,
+          role: role,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        navigate(`/${role}/login`);
+      } else {
+        setErrors({ ...newErrors, email: data.message });
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      setErrors({ ...newErrors, email: "Server error. Please try again." });
+    } finally {
       setLoading(false);
-      navigate(`/${role}/login`);
-    }, 700);
+    }
   };
 
   return (
