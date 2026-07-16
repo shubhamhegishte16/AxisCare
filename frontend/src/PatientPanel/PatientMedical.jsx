@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import Navbar from './Navbar';
+import { Search } from 'lucide-react';
 
 const VITALS_DATA = [
     { id: 1, label: 'Heart Rate', value: '70 bpm', color: 'text-teal-500', icon: 'heart-rate' },
@@ -114,7 +115,7 @@ const VitalsIcon = ({ type }) => {
 export default function PatientMedical() {
     const [activeTab, setActiveTab] = useState('All Visits');
     const [searchQuery, setSearchQuery] = useState('');
-    
+
     const searchSectionRef = useRef(null);
     const searchInputRef = useRef(null);
 
@@ -182,14 +183,14 @@ export default function PatientMedical() {
             <Navbar />
 
             {/* Page Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-6 sm:py-8 flex flex-col justify-between">
 
                 {/* Title Area */}
                 <div className="flex items-center justify-between mb-6 sm:mb-8">
                     <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#0f4c81]">
                         My Medical History
                     </h1>
-                    <button 
+                    <button
                         onClick={handleScrollToSearch}
                         className="p-2.5 bg-white border border-slate-200 rounded-full text-slate-400 hover:text-[#00b4d8] transition-all hover:shadow-sm"
                     >
@@ -239,9 +240,7 @@ export default function PatientMedical() {
                             className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-[#00b4d8] focus:ring-1 focus:ring-[#00b4d8] text-sm text-slate-700 placeholder-slate-400 transition-all shadow-sm"
                         />
                         <span className="absolute left-4 top-3.5 text-slate-400">
-                            <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                            <Search size={18}/>
                         </span>
                     </div>
 
@@ -255,8 +254,8 @@ export default function PatientMedical() {
                                         key={tab}
                                         onClick={() => { setActiveTab(tab); setSearchQuery(''); }}
                                         className={`px-5 sm:px-8 py-2 rounded-full text-xs sm:text-sm font-semibold tracking-wide transition-all shrink-0 ${isActive
-                                                ? 'bg-[#00b4d8] text-white shadow-sm shadow-cyan-200'
-                                                : 'bg-white border border-[#00b4d8]/40 text-[#00b4d8] hover:bg-[#00b4d8]/5'
+                                            ? 'bg-[#00b4d8] text-white shadow-sm shadow-cyan-200'
+                                            : 'bg-white border border-[#00b4d8]/40 text-[#00b4d8] hover:bg-[#00b4d8]/5'
                                             }`}
                                     >
                                         {tab}
@@ -380,8 +379,8 @@ export default function PatientMedical() {
                                                     <td className="py-4 px-4 sm:px-6 text-slate-600">{row.date}</td>
                                                     <td className="py-4 px-4 sm:px-6 text-right">
                                                         <button className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${row.status === 'Pending'
-                                                                ? 'bg-[#9ae5f4] text-white cursor-not-allowed'
-                                                                : 'bg-[#00b4d8] text-white hover:bg-[#0092b3]'
+                                                            ? 'bg-[#9ae5f4] text-white cursor-not-allowed'
+                                                            : 'bg-[#00b4d8] text-white hover:bg-[#0092b3]'
                                                             }`}>
                                                             View
                                                         </button>

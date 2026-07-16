@@ -16,6 +16,9 @@ import RoleSelect from './RoleSelect';
 import PatientDashboard from './PatientPanel/PatientDashboard.jsx';
 import PatientProfile from './PatientPanel/PatientProfile.jsx';
 import PatientMedical from './PatientPanel/PatientMedical.jsx';
+import PatientAppointments from './PatientPanel/PatientAppointments.jsx';
+import PatientBills from './PatientPanel/PatientBills.jsx';
+import NotificationsPage from './PatientPanel/Notifiactionspage.jsx';
 
 // Pharmacist Panel
 import PharmacyLogin from './PharmacistPanel/PharmacyLogin.jsx';
@@ -48,6 +51,9 @@ function App() {
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
         <Route path="/patient-profile" element={<PatientProfile />} />
         <Route path='/patient-history' element={<PatientMedical />} />
+        <Route path='/patient-appointments' element={<PatientAppointments />}/>
+        <Route path='/patient-bills' element={<PatientBills />}/>
+        <Route path='/patient-notifications' element={<NotificationsPage />} />
 
         {/* Pharmacist Panel */}
         <Route path="/pharmacy/login" element={<PharmacyLogin />} />

@@ -35,7 +35,7 @@ export default function Navbar() {
                         <NavLink to="/patient-bills" className={navLinkClass}>Bills & Receipts</NavLink>
                     </nav>
 
-                    <button className="relative text-[#0f4c81] hover:text-[#00b4d8] p-1 transition">
+                    <button className="relative text-[#0f4c81] hover:text-[#00b4d8] p-1 transition" onClick={() => navigate('/patient-notifications')}>
                         <Bell className="w-6 h-6 fill-current" />
                         <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                     </button>
