@@ -115,6 +115,24 @@ export const topSellingMedicines = [
   { name: 'Metformin 500mg', sold: 540 },
 ];
 
+export const userProfile = {
+  name: 'Steve Coleman',
+  role: 'Pharmacist',
+  email: 'steve.coleman@axiscare.com',
+  phone: '+91 98200 11223',
+  licenseNo: 'PHM-MH-20481',
+  pharmacy: 'AxisCare Pharmacy — Andheri West',
+  joined: '03 Jan 2023',
+  address: 'Shop 12, Sunrise Complex, Andheri West, Mumbai 400058',
+};
+
+export const reportHighlights = [
+  { label: 'Total Revenue (Jun)', value: 'Rs. 5,12,000', change: '+7.5%', positive: true },
+  { label: 'Prescriptions Filled', value: '1,284', change: '+3.2%', positive: true },
+  { label: 'Avg. Bill Value', value: 'Rs. 742', change: '-1.1%', positive: false },
+  { label: 'Stock Turnover', value: '4.2x', change: '+0.4x', positive: true },
+];
+
 export const activityTimeline = [
   { text: 'Prescription RX-1042 dispensed for Rushan Kamble', time: '10 min ago' },
   { text: 'Added new medicine — Azithromycin 250mg', time: '45 min ago' },
