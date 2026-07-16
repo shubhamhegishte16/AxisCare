@@ -9,6 +9,9 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 
+//Patinet Panel
+import patientRoutes from './routes/patientRoutes.js';
+
 dotenv.config();
 
 connectDB();
@@ -32,12 +35,15 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/", (req, res) => {
     res.json({
         success: true,
-        message: "AxisCare Backend Running 🚑"
+        message: "AxisCare Backend Running"
     });
 });
 
 app.use("/api/auth", authRoutes);
 app.use("/api/doctor", doctorRoutes);
+
+//patient Panel
+app.use("/api/patient", patientRoutes);
 
 const PORT = process.env.PORT || 5000;
 

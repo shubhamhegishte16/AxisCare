@@ -2,6 +2,8 @@ import User from "../models/user.js";
 import generateToken from "../utils/generateToken.js";
 import bcrypt from "bcryptjs";
 
+import Patient from '../models/Patient.js';
+
 export const registerUser = async (req, res) => {
   try {
     const { fullName, email, phone, password, role, department } = req.body;
@@ -37,6 +39,43 @@ export const registerUser = async (req, res) => {
     });
 
     if (user) {
+
+      // For Patient Profile Updation
+      // If role is patient, create patient profile
+      let patientData = null;
+      if (role === 'patient' || role === undefined) {
+        try {
+          const nameParts = fullName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          const now = new Date();
+          const dateOfRegistration = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
+
+          patientData = await Patient.create({
+            userId: user._id,
+            firstName,
+            lastName,
+            dateOfBirth: '01/01/1970',
+            gender: 'Prefer not to say',
+            address: 'Not provided',
+            phoneNumber: phone,
+            email: email,
+            dateOfRegistration,
+            emergencyContacts: [
+              {
+                name: 'Emergency Contact',
+                relationship: 'Not specified',
+                phone1: 'Not provided',
+                isPrimary: true,
+              }
+            ],
+          });
+          console.log('Patient profile created');
+        } catch (patientError) {
+          console.error('Error creating patient profile:', patientError);
+        }
+      }
+
       // Generate Token
       const token = generateToken(user._id);
 
