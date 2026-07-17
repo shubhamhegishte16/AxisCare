@@ -42,6 +42,9 @@ import Billing from './PharmacistPanel/Billing.jsx';
 import Report from './PharmacistPanel/Reports.jsx';
 import Notification from './PharmacistPanel/Notifications.jsx';
 
+// Receptionist Panel
+import ReceptionistAppointments from './receptionist/ReceptionistAppointments.jsx';
+
 function App() {
   return (
     <Router>
@@ -88,6 +91,10 @@ function App() {
         <Route path="/pharmacy/billing" element={<Billing />} />
         <Route path="/pharmacy/reports" element={<Report />} />
         <Route path="/pharmacy/notifications" element={<Notification />} />
+
+        {/* Receptionist Panel */}
+        <Route path="/receptionist/appointments" element={<ReceptionistAppointments />} />
+        <Route path="/receptionist" element={<Navigate to="/receptionist/appointments" replace />} />
 
         {/* Redirect /pharmacy */}
         <Route

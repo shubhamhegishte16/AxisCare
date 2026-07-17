@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import { 
   Users, 
@@ -12,19 +12,38 @@ import {
   ChevronRight,
   Eye,
   MoreVertical,
-  Plus
+  Plus,
+  Loader2
 } from 'lucide-react';
-const patientsData = [
-  { id: 'P10234', name: 'Rajesh Kumar', age: 56, gender: 'Male', contact: '+91 98765 43210', condition: 'Hypertension', lastVisit: '11 Jul 2026', status: 'Active', img: 'https://i.pravatar.cc/150?img=11' },
-  { id: 'P10567', name: 'Priya Mehta', age: 34, gender: 'Female', contact: '+91 87654 32109', condition: 'Chest Pain', lastVisit: '09 Jul 2026', status: 'Active', img: 'https://i.pravatar.cc/150?img=5' },
-  { id: 'P10890', name: 'Amit Verma', age: 45, gender: 'Male', contact: '+91 76543 21098', condition: 'Asthma', lastVisit: '08 Jul 2026', status: 'Active', img: 'https://i.pravatar.cc/150?img=8' },
-  { id: 'P11023', name: 'Neha Patil', age: 29, gender: 'Female', contact: '+91 65432 10987', condition: 'Knee Pain', lastVisit: '07 Jul 2026', status: 'Follow-up Due', img: 'https://i.pravatar.cc/150?img=20' },
-  { id: 'P11156', name: 'Suresh Chandra', age: 62, gender: 'Male', contact: '+91 54321 09876', condition: 'Diabetes Type 2', lastVisit: '05 Jul 2026', status: 'Active', img: 'https://i.pravatar.cc/150?img=13' },
-  { id: 'P11345', name: 'Sneha Kapoor', age: 31, gender: 'Female', contact: '+91 43210 98765', condition: 'Migraine', lastVisit: '04 Jul 2026', status: 'Follow-up Due', img: 'https://i.pravatar.cc/150?img=21' },
-  { id: 'P11478', name: 'Vikram Singh', age: 39, gender: 'Male', contact: '+91 32109 87654', condition: 'High Cholesterol', lastVisit: '02 Jul 2026', status: 'Inactive', img: 'https://i.pravatar.cc/150?img=33' },
-  { id: 'P11590', name: 'Meera Joshi', age: 58, gender: 'Female', contact: '+91 21098 76543', condition: 'Thyroid', lastVisit: '30 Jun 2026', status: 'Active', img: 'https://i.pravatar.cc/150?img=22' },
-];
+import { appointmentService } from '../services/appointmentService';
+
 const Patients = () => {
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const res = await appointmentService.getDoctorPatients();
+        if (res.success) {
+          setPatients(res.data);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPatients();
+  }, []);
+
+  const filtered = patients.filter(p => 
+    search === '' || 
+    p.name.toLowerCase().includes(search.toLowerCase()) || 
+    p.contact.includes(search)
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <Header />
@@ -39,11 +58,11 @@ const Patients = () => {
             Add New Patient</button></div>
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <StatCard title="Total Patients" value="248" subtext="All time patients" icon={Users} iconColor="text-blue-500" bgColor="bg-blue-50" />
-          <StatCard title="New Patients" value="18" subtext="This month" icon={UserPlus} iconColor="text-teal-500" bgColor="bg-teal-50" />
-          <StatCard title="Active Patients" value="142" subtext="Currently in treatment" icon={Calendar} iconColor="text-purple-500" bgColor="bg-purple-50" />
-          <StatCard title="Follow-up Due" value="32" subtext="Need attention" icon={Heart} iconColor="text-yellow-500" bgColor="bg-yellow-50" />
-          <StatCard title="Records" value="1,248" subtext="Total medical records" icon={FileText} iconColor="text-green-500" bgColor="bg-green-50" /></div>
+          <StatCard title="Total Patients" value={patients.length} subtext="All time patients" icon={Users} iconColor="text-blue-500" bgColor="bg-blue-50" />
+          <StatCard title="New Patients" value={patients.length} subtext="This month" icon={UserPlus} iconColor="text-teal-500" bgColor="bg-teal-50" />
+          <StatCard title="Active Patients" value={patients.filter(p => p.status === 'Active').length} subtext="Currently in treatment" icon={Calendar} iconColor="text-purple-500" bgColor="bg-purple-50" />
+          <StatCard title="Follow-up Due" value={patients.filter(p => p.status === 'Follow-up Due').length} subtext="Need attention" icon={Heart} iconColor="text-yellow-500" bgColor="bg-yellow-50" />
+          <StatCard title="Records" value={patients.length} subtext="Total medical records" icon={FileText} iconColor="text-green-500" bgColor="bg-green-50" /></div>
         {/* Filters & Search */}
         <div className="bg-white p-4 rounded-t-xl border border-gray-200 border-b-0 flex flex-col lg:flex-row items-center gap-4">
           <div className="relative flex-1 w-full">
@@ -51,6 +70,8 @@ const Patients = () => {
             <input 
               type="text" 
               placeholder="Search patients by name, ID or phone number..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00B9D6] focus:border-transparent transition-all"
             /></div>
           <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 hide-scrollbar">
@@ -94,19 +115,23 @@ const Patients = () => {
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4 text-right">Actions</th></tr></thead>
             <tbody className="divide-y divide-gray-100">
-              {patientsData.map((patient) => (
+              {loading ? (
+                <tr><td colSpan={7} className="px-6 py-10 text-center"><Loader2 className="w-6 h-6 text-[#00B9D6] animate-spin mx-auto" /></td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-500 font-medium">No patients found.</td></tr>
+              ) : filtered.map((patient) => (
                 <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <img src={patient.img} alt={patient.name} className="w-10 h-10 rounded-full object-cover bg-gray-100" />
                       <div>
                         <p className="text-sm font-bold text-gray-900">{patient.name}</p>
-                        <p className="text-xs text-gray-500">PID: {patient.id}</p></div></div></td>
+                        <p className="text-xs text-gray-500">{patient.id}</p></div></div></td>
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                     {patient.age} / {patient.gender}</td>
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                     {patient.contact}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-[150px]">
                     {patient.condition}</td>
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                     {patient.lastVisit}</td>
@@ -121,17 +146,10 @@ const Patients = () => {
             </tbody></table></div>
         {/* Pagination */}
         <div className="mt-6 flex items-center justify-between">
-          <p className="text-sm text-gray-600 font-medium">Showing 1 to 8 of 248 patients</p>
-          <div className="flex items-center gap-1">
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"><ChevronLeft className="w-4 h-4" /></button>
-            <button className="w-8 h-8 flex items-center justify-center rounded bg-[#00B9D6] text-white font-semibold text-sm">1</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold text-sm">2</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold text-sm">3</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold text-sm">4</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold text-sm">5</button>
-            <span className="w-8 h-8 flex items-center justify-center text-gray-400">...</span>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold text-sm">31</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"><ChevronRight className="w-4 h-4" /></button></div></div></main></div>
+          <p className="text-sm text-gray-600 font-medium">Showing {filtered.length} of {patients.length} patients</p>
+        </div>
+      </main>
+    </div>
   );
 };
 const StatCard = ({ title, value, subtext, icon: Icon, iconColor, bgColor }) => (

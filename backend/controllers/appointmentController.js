@@ -95,3 +95,79 @@ export const getDoctorsByDepartment = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+// GET /api/appointments/my-doctor-appointments — doctor sees their appointments (status: Scheduled)
+export const getDoctorAppointments = async (req, res) => {
+  try {
+    const doctorName = req.user.fullName;
+    const appointments = await Appointment.find({ doctor: doctorName, status: { $in: ['Scheduled', 'Completed'] } }).sort({ createdAt: -1 });
+    res.status(200).json({ success: true, count: appointments.length, data: appointments });
+  } catch (error) {
+    console.error('Error in getDoctorAppointments:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+// PUT /api/appointments/:id/doctor-cancel — doctor cancels an appointment assigned to them
+export const cancelByDoctor = async (req, res) => {
+  try {
+    const doctorName = req.user.fullName;
+    const appointment = await Appointment.findOne({ _id: req.params.id, doctor: doctorName });
+    if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found.' });
+    if (appointment.status === 'Cancelled') return res.status(400).json({ success: false, message: 'Already cancelled.' });
+    appointment.status = 'Cancelled';
+    await appointment.save();
+    res.status(200).json({ success: true, message: 'Appointment cancelled.', data: appointment });
+  } catch (error) {
+    console.error('Error in cancelByDoctor:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// GET /api/appointments/my-doctor-patients — doctor gets a list of unique patients they have seen/are scheduled to see
+export const getDoctorPatients = async (req, res) => {
+  try {
+    const doctorName = req.user.fullName;
+    // Find all non-cancelled appointments for this doctor, sorted by most recent
+    const appointments = await Appointment.find({ doctor: doctorName, status: { $ne: 'Cancelled' } }).sort({ preferredDate: -1, createdAt: -1 });
+    
+    // Extract unique patients based on patientId
+    const patientMap = new Map();
+    appointments.forEach(apt => {
+      const pid = apt.patientId ? apt.patientId.toString() : apt.email;
+      if (!patientMap.has(pid)) {
+        patientMap.set(pid, {
+          id: apt.appointmentId, // Using apt id as a visual reference
+          name: apt.fullName,
+          age: apt.age,
+          gender: apt.gender,
+          contact: apt.phoneNumber,
+          condition: apt.reasonForVisit,
+          lastVisit: apt.preferredDate,
+          status: apt.status === 'Completed' ? 'Follow-up Due' : 'Active',
+          img: `https://ui-avatars.com/api/?name=${encodeURIComponent(apt.fullName)}&background=random`
+        });
+      }
+    });
+
+    const uniquePatients = Array.from(patientMap.values());
+    res.status(200).json({ success: true, count: uniquePatients.length, data: uniquePatients });
+  } catch (error) {
+    console.error('Error in getDoctorPatients:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// PUT /api/appointments/:id/doctor-complete — doctor marks an appointment as Completed
+export const completeByDoctor = async (req, res) => {
+  try {
+    const doctorName = req.user.fullName;
+    const appointment = await Appointment.findOne({ _id: req.params.id, doctor: doctorName });
+    if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found.' });
+    if (appointment.status === 'Completed') return res.status(400).json({ success: false, message: 'Already completed.' });
+    appointment.status = 'Completed';
+    await appointment.save();
+    res.status(200).json({ success: true, message: 'Appointment marked as completed.', data: appointment });
+  } catch (error) {
+    console.error('Error in completeByDoctor:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};

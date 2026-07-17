@@ -22,7 +22,7 @@ export const roleConfig = {
   receptionist: {
     label: 'Receptionist',
     icon: Headset,
-    dashboard: '/receptionist',
+    dashboard: '/receptionist/appointments',
   },
   patient: {
     label: 'Patient',

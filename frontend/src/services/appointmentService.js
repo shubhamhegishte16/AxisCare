@@ -63,5 +63,65 @@ export const appointmentService = {
       throw error.response?.data || { success: false, message: 'Failed to fetch doctors' };
     }
   },
+  // Get ALL appointments — receptionist / admin
+  getAllAppointments: async () => {
+    try {
+      const response = await appointmentApi.get('/appointments/all');
+      return response.data;
+    } catch (error) {
+      console.error('Error in getAllAppointments:', error);
+      throw error.response?.data || { success: false, message: 'Failed to load appointments' };
+    }
+  },
+  // Update appointment status — receptionist / admin
+  updateAppointmentStatus: async (id, status) => {
+    try {
+      const response = await appointmentApi.put(`/appointments/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.error('Error in updateAppointmentStatus:', error);
+      throw error.response?.data || { success: false, message: 'Failed to update status' };
+    }
+  },
+  // Get appointments assigned to the logged-in doctor
+  getDoctorAppointments: async () => {
+    try {
+      const response = await appointmentApi.get('/appointments/my-doctor-appointments');
+      return response.data;
+    } catch (error) {
+      console.error('Error in getDoctorAppointments:', error);
+      throw error.response?.data || { success: false, message: 'Failed to load doctor appointments' };
+    }
+  },
+  // Doctor cancels an appointment
+  cancelAppointmentByDoctor: async (id) => {
+    try {
+      const response = await appointmentApi.put(`/appointments/${id}/doctor-cancel`);
+      return response.data;
+    } catch (error) {
+      console.error('Error in cancelAppointmentByDoctor:', error);
+      throw error.response?.data || { success: false, message: 'Failed to cancel appointment' };
+    }
+  },
+  // Get unique patients for the logged-in doctor
+  getDoctorPatients: async () => {
+    try {
+      const response = await appointmentApi.get('/appointments/my-doctor-patients');
+      return response.data;
+    } catch (error) {
+      console.error('Error in getDoctorPatients:', error);
+      throw error.response?.data || { success: false, message: 'Failed to load doctor patients' };
+    }
+  },
+  // Doctor marks an appointment as completed
+  completeAppointmentByDoctor: async (id) => {
+    try {
+      const response = await appointmentApi.put(`/appointments/${id}/doctor-complete`);
+      return response.data;
+    } catch (error) {
+      console.error('Error in completeAppointmentByDoctor:', error);
+      throw error.response?.data || { success: false, message: 'Failed to complete appointment' };
+    }
+  },
 };
 export default appointmentApi;
