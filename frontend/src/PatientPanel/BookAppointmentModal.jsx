@@ -1,166 +1,403 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, UploadCloud } from 'lucide-react';
-import { patientService } from '../services/patientService';
+import React, { useState, useEffect } from 'react';
+import {
+    SquarePlus,
+    Bell,
+    User,
+    AlertTriangle,
+    ChevronDown,
+    Menu,
+    X,
+    Loader2
+} from 'lucide-react';
 import { appointmentService } from '../services/appointmentService';
-const FIELD_CLS = 'w-full border border-gray-300 rounded-md p-2 outline-none focus:border-[#00B4D8]';
-const LABEL_CLS = 'block text-sm text-gray-600 mb-1';
-const REQ = <span className="text-red-500">*</span>;
-const DEPARTMENTS = ['Cardiology', 'Neurology', 'Orthopedics', 'ENT', 'Dermatology', 'General Medicine'];
+import { patientService } from '../services/patientService';
+
 export default function BookAppointmentModal({ isOpen, onClose }) {
-  const [form, setForm] = useState({ fullName: '', phoneNumber: '', email: '', age: '', gender: 'Male', address: '', department: 'Cardiology', doctor: '', doctorProfileId: '', appointmentType: 'In-Person', preferredDate: '', preferredTime: '', reasonForVisit: '', symptoms: '' });
-  const [doctors, setDoctors] = useState([]);
-  const [docFile, setDocFile] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const fileRef = useRef();
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  // Pre-fill patient info and fetch doctors when modal opens
-  useEffect(() => {
-    if (!isOpen) return;
-    setError(''); setSuccess('');
-    patientService.getOrCreateProfile().then(res => {
-      if (res.success) {
-        const p = res.data;
-        const dob = p.dateOfBirth;
-        let age = '';
-        if (dob) {
-          const parts = dob.split('/');
-          if (parts.length === 3) {
-            const birth = new Date(parts[2], parts[0] - 1, parts[1]);
-            age = String(new Date().getFullYear() - birth.getFullYear());
-          }
+    const [loading, setLoading] = useState(false);
+    const [loadingDoctors, setLoadingDoctors] = useState(false);
+    const [doctors, setDoctors] = useState([]);
+    const [formData, setFormData] = useState({
+        fullName: '',
+        phoneNumber: '',
+        email: '',
+        age: '',
+        gender: 'Prefer not to say',
+        address: '',
+        department: '',
+        doctor: '',
+        doctorProfileId: '',
+        appointmentType: 'In-Person',
+        preferredDate: '',
+        preferredTime: '',
+        reasonForVisit: '',
+        symptoms: '',
+    });
+    const [documentFile, setDocumentFile] = useState(null);
+    const [error, setError] = useState('');
+
+    // Load patient data and doctors when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            loadPatientData();
+            loadDoctors();
         }
-        setForm(f => ({ ...f, fullName: `${p.firstName} ${p.lastName}`.trim(), phoneNumber: p.phoneNumber || '', email: p.email || '', age, gender: p.gender || 'Male', address: p.address || '' }));
-      }
-    }).catch(() => {});
-    fetchDoctors();
-  }, [isOpen]);
-  const fetchDoctors = async () => {
-    try {
-      const res = await appointmentService.getDoctors();
-      if (res.success) {
-        setDoctors(res.data);
-        if (res.data.length > 0) setForm(f => ({ ...f, doctor: res.data[0].fullName, doctorProfileId: res.data[0]._id }));
-        else setForm(f => ({ ...f, doctor: '', doctorProfileId: '' }));
-      }
-    } catch { setDoctors([]); }
-  };
-  const handleDeptChange = (dept) => { set('department', dept); };
-  const handleDoctorChange = (fullName) => {
-    const found = doctors.find(d => d.fullName === fullName);
-    setForm(f => ({ ...f, doctor: fullName, doctorProfileId: found?._id || '' }));
-  };
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file && file.size > 5 * 1024 * 1024) { setError('File must be under 5MB.'); return; }
-    setDocFile(file); setError('');
-  };
-  const handleSubmit = async () => {
-    setError(''); setSuccess('');
-    const required = ['fullName', 'phoneNumber', 'email', 'age', 'gender', 'address', 'department', 'doctor', 'appointmentType', 'preferredDate', 'preferredTime', 'reasonForVisit'];
-    const missing = required.find(k => !form[k]);
-    if (missing) return setError('Please fill all required fields.');
-    setSubmitting(true);
-    try {
-      const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-      if (docFile) fd.append('document', docFile);
-      const res = await appointmentService.bookAppointment(fd);
-      if (res.success) { setSuccess('Appointment request submitted! You will receive a confirmation soon.'); setTimeout(() => { onClose(); }, 2500); }
-      else setError(res.message || 'Failed to book appointment.');
-    } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
-    } finally { setSubmitting(false); }
-  };
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto font-sans">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 pb-4 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">Book Appointment</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"><X className="w-6 h-6" /></button>
-        </div>
-        {/* Body */}
-        <div className="p-6 space-y-8">
-          {/* 1. Patient Information */}
-          <section>
-            <h3 className="text-[#0a3d6a] font-bold mb-4">1. Patient Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div><label className={LABEL_CLS}>Full Name</label><input className={FIELD_CLS} value={form.fullName} onChange={e => set('fullName', e.target.value)} /></div>
-              <div><label className={LABEL_CLS}>Phone Number</label><input className={FIELD_CLS} value={form.phoneNumber} onChange={e => set('phoneNumber', e.target.value)} /></div>
-              <div><label className={LABEL_CLS}>Email Address</label><input type="email" className={FIELD_CLS} value={form.email} onChange={e => set('email', e.target.value)} /></div>
-              <div><label className={LABEL_CLS}>Age</label><input className={FIELD_CLS} value={form.age} onChange={e => set('age', e.target.value)} /></div>
-              <div><label className={LABEL_CLS}>Gender</label>
-                <select className={FIELD_CLS} value={form.gender} onChange={e => set('gender', e.target.value)}>
-                  {['Male', 'Female', 'Other', 'Prefer not to say'].map(g => <option key={g}>{g}</option>)}
-                </select>
-              </div>
-              <div><label className={LABEL_CLS}>Address</label><input className={FIELD_CLS} value={form.address} onChange={e => set('address', e.target.value)} /></div>
+    }, [isOpen]);
+
+    const loadPatientData = async () => {
+        try {
+            const response = await patientService.getOrCreateProfile();
+            if (response.success) {
+                const data = response.data;
+                setFormData(prev => ({
+                    ...prev,
+                    fullName: `${data.firstName} ${data.lastName}`.trim(),
+                    phoneNumber: data.phoneNumber || '',
+                    email: data.email || '',
+                    age: '',
+                    gender: data.gender || 'Prefer not to say',
+                    address: data.address || '',
+                }));
+            }
+        } catch (error) {
+            console.error('Error loading patient data:', error);
+        }
+    };
+
+    const loadDoctors = async () => {
+        try {
+            setLoadingDoctors(true);
+            setError('');
+            console.log('Fetching doctors...');
+            
+            const response = await appointmentService.getDoctors();
+            console.log('Doctors response:', response);
+            
+            if (response.success) {
+                setDoctors(response.data);
+                console.log('Doctors loaded:', response.data.length);
+            } else {
+                setError('Failed to load doctors');
+            }
+        } catch (error) {
+            console.error('Error loading doctors:', error);
+            setError(error.message || 'Failed to load doctors');
+        } finally {
+            setLoadingDoctors(false);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        
+        // If department changes, reset doctor selection
+        if (name === 'department') {
+            setFormData(prev => ({ ...prev, doctor: '' }));
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setDocumentFile(file);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        
+        try {
+            setLoading(true);
+            
+            const submitData = new FormData();
+            Object.keys(formData).forEach(key => {
+                submitData.append(key, formData[key]);
+            });
+            if (documentFile) {
+                submitData.append('document', documentFile);
+            }
+
+            const response = await appointmentService.bookAppointment(submitData);
+            
+            if (response.success) {
+                onClose();
+            } else {
+                setError(response.message || 'Failed to book appointment');
+            }
+        } catch (error) {
+            console.error('Error booking appointment:', error);
+            setError(error.message || 'Failed to book appointment. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    // Filter doctors by department if department is selected
+    const filteredDoctors = formData.department 
+        ? doctors.filter(doc => doc.department === formData.department)
+        : doctors;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-[#0f4c81]">Book New Appointment</h2>
+                    <button 
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full transition"
+                    >
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {/* Error Message */}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Personal Information */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <User className="w-4 h-4 text-[#00B4D8]" />
+                            Personal Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                                <input
+                                    type="text"
+                                    name="fullName"
+                                    value={formData.fullName}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                                <input
+                                    type="tel"
+                                    name="phoneNumber"
+                                    value={formData.phoneNumber}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Age *</label>
+                                <input
+                                    type="number"
+                                    name="age"
+                                    value={formData.age}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                                <select
+                                    name="gender"
+                                    value={formData.gender}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                >
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                    <option value="Prefer not to say">Prefer not to say</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Appointment Details */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Appointment Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
+                                <select
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                >
+                                    <option value="">Select Department</option>
+                                    <option value="Cardiology">Cardiology</option>
+                                    <option value="ENT">ENT</option>
+                                    <option value="General Medicine">General Medicine</option>
+                                    <option value="Orthopedics">Orthopedics</option>
+                                    <option value="Pediatrics">Pediatrics</option>
+                                    <option value="Dermatology">Dermatology</option>
+                                    <option value="Ophthalmology">Ophthalmology</option>
+                                    <option value="Neurology">Neurology</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Doctor *</label>
+                                <select
+                                    name="doctor"
+                                    value={formData.doctor}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                    disabled={loadingDoctors}
+                                >
+                                    <option value="">{loadingDoctors ? 'Loading doctors...' : 'Select Doctor'}</option>
+                                    {filteredDoctors.length === 0 && !loadingDoctors && formData.department && (
+                                        <option value="" disabled>No doctors available for this department</option>
+                                    )}
+                                    {filteredDoctors.map((doc) => (
+                                        <option key={doc._id} value={doc.fullName}>
+                                            {doc.fullName} {doc.department ? `(${doc.department})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                {loadingDoctors && (
+                                    <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                        <Loader2 className="w-3 h-3 animate-spin" /> Loading doctors...
+                                    </p>
+                                )}
+                                {!loadingDoctors && doctors.length === 0 && (
+                                    <p className="text-red-500 text-xs mt-1">No doctors found. Please contact support.</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Type *</label>
+                                <select
+                                    name="appointmentType"
+                                    value={formData.appointmentType}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                >
+                                    <option value="In-Person">In-Person</option>
+                                    <option value="Video Consult">Video Consult</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Date *</label>
+                                <input
+                                    type="date"
+                                    name="preferredDate"
+                                    value={formData.preferredDate}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Time *</label>
+                                <input
+                                    type="time"
+                                    name="preferredTime"
+                                    value={formData.preferredTime}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Medical Details */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Medical Details</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Visit *</label>
+                                <textarea
+                                    name="reasonForVisit"
+                                    value={formData.reasonForVisit}
+                                    onChange={handleInputChange}
+                                    rows="2"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    placeholder="Briefly describe your reason for visit"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Symptoms</label>
+                                <textarea
+                                    name="symptoms"
+                                    value={formData.symptoms}
+                                    onChange={handleInputChange}
+                                    rows="2"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    placeholder="Describe any symptoms you're experiencing"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Upload Medical Documents (Optional)</label>
+                                <input
+                                    type="file"
+                                    onChange={handleFileChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
+                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="px-6 py-2 bg-[#00B4D8] hover:bg-[#0096B4] text-white rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Booking...
+                                </>
+                            ) : (
+                                'Book Appointment'
+                            )}
+                        </button>
+                    </div>
+                </form>
             </div>
-          </section>
-          {/* 2. Appointment Details */}
-          <section>
-            <h3 className="text-[#0a3d6a] font-bold mb-4">2. Appointment Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div><label className={LABEL_CLS}>Department {REQ}</label>
-                <select className={FIELD_CLS} value={form.department} onChange={e => handleDeptChange(e.target.value)}>
-                  {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
-                </select>
-              </div>
-              <div><label className={LABEL_CLS}>Doctor {REQ}</label>
-                <select className={FIELD_CLS} value={form.doctor} onChange={e => handleDoctorChange(e.target.value)}>
-                  {doctors.length === 0 ? <option value="">No doctors available</option> : doctors.map(d => <option key={d._id} value={d.fullName}>{d.fullName}</option>)}
-                </select>
-              </div>
-              <div><label className={LABEL_CLS}>Appointment Type {REQ}</label>
-                <select className={FIELD_CLS} value={form.appointmentType} onChange={e => set('appointmentType', e.target.value)}>
-                  <option>In-Person</option>
-                  <option>Video Consult</option>
-                </select>
-              </div>
-              <div><label className={LABEL_CLS}>Preferred Date {REQ}</label><input type="date" className={FIELD_CLS} value={form.preferredDate} onChange={e => set('preferredDate', e.target.value)} /></div>
-              <div><label className={LABEL_CLS}>Preferred Time {REQ}</label><input type="time" className={FIELD_CLS} value={form.preferredTime} onChange={e => set('preferredTime', e.target.value)} /></div>
-              <div><label className={LABEL_CLS}>Reason for Visit {REQ}</label><input className={FIELD_CLS} value={form.reasonForVisit} onChange={e => set('reasonForVisit', e.target.value)} /></div>
-            </div>
-          </section>
-          {/* 3. Additional Information */}
-          <section>
-            <h3 className="text-[#0a3d6a] font-bold mb-4">3. Additional Information</h3>
-            <label className={LABEL_CLS}>Symptoms / Notes (Optional)</label>
-            <textarea className={`${FIELD_CLS} resize-none h-24`} value={form.symptoms} onChange={e => set('symptoms', e.target.value)} maxLength={300} />
-            <div className="text-right text-xs text-gray-400 mt-1">{form.symptoms.length}/300</div>
-          </section>
-          {/* 4. Upload Documents */}
-          <section>
-            <h3 className="text-[#0a3d6a] font-bold mb-4">4. Upload Documents (Optional)</h3>
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => fileRef.current.click()}>
-                <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={handleFileChange} />
-                <UploadCloud className="w-8 h-8 text-gray-400 mb-2" />
-                {docFile ? <p className="text-sm text-green-600 font-medium">{docFile.name}</p> : <><p className="text-sm text-gray-600">Click to upload or drag and drop</p><p className="text-xs text-gray-400">Supports: JPG, PNG, PDF (Max 5MB)</p></>}
-              </div>
-              <div className="flex-1 bg-[#F0F6FA] rounded-lg p-4">
-                <h4 className="text-[#0a3d6a] font-semibold text-sm mb-2">Note:</h4>
-                <ul className="text-sm text-[#0a3d6a] space-y-1 list-disc list-inside">
-                  <li>Your appointment request will be reviewed by our receptionist.</li>
-                  <li>You will get a confirmation once the appointment is scheduled.</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
-          {success && <p className="text-green-600 text-sm font-medium">{success}</p>}
         </div>
-        {/* Footer */}
-        <div className="flex justify-end items-center gap-4 p-6 border-t bg-white sticky bottom-0 rounded-b-xl">
-          <button onClick={onClose} className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors">Cancel</button>
-          <button onClick={handleSubmit} disabled={submitting} className="px-6 py-2 bg-[#00B4D8] hover:bg-[#0096B4] disabled:opacity-60 text-white rounded-md font-medium transition-colors">
-            {submitting ? 'Submitting...' : 'Submit Request'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
