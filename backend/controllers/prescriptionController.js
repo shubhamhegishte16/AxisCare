@@ -1,4 +1,5 @@
 import Prescription from '../models/Prescription.js';
+import { notifyPharmacists } from '../utils/pharmacyNotify.js';
 
 const generatePrescriptionId = async () => {
   const currentYear = new Date().getFullYear();
@@ -50,6 +51,13 @@ export const createPrescription = async (req, res) => {
     await newPrescription.save();
 
     res.status(201).json({ success: true, message: `Prescription ${status === 'Draft' ? 'saved as draft' : 'generated'} successfully`, data: newPrescription });
+
+    if (newPrescription.status === 'Generated') {
+      notifyPharmacists(
+        'New Prescription',
+        `New prescription ${prescriptionId} for ${patientName} from Dr. ${doctorName} is ready for fulfillment.`
+      );
+    }
   } catch (error) {
     console.error('Error in createPrescription:', error);
     res.status(500).json({ success: false, message: 'Failed to save prescription', error: error.message });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { PackagePlus, Bell, User } from 'lucide-react';
+import { PackagePlus, Bell, User, LogOut } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', path: '/pharmacy/dashboard' },
@@ -12,8 +12,34 @@ const navItems = [
   { label: 'Reports', path: '/pharmacy/reports' },
 ];
 
-const PharmacyNavbar = ({ userName = 'Steve', userRole = 'Pharmacist' }) => {
+const PharmacyNavbar = () => {
   const navigate = useNavigate();
+
+  let storedUser = null;
+  try {
+    storedUser = JSON.parse(localStorage.getItem('user'));
+  } catch {
+    storedUser = null;
+  }
+  const userName = storedUser?.fullName || 'Pharmacist';
+  const userRole = storedUser?.role
+    ? storedUser.role.charAt(0).toUpperCase() + storedUser.role.slice(1)
+    : 'Pharmacist';
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:5000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // ignore network errors, clear local session regardless
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/pharmacist/login', { replace: true });
+    }
+  };
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
@@ -76,6 +102,15 @@ const PharmacyNavbar = ({ userName = 'Steve', userRole = 'Pharmacist' }) => {
               <span className="text-sm font-bold text-gray-900">{userName}</span>
               <span className="text-xs text-gray-400">{userRole}</span>
             </span>
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 text-gray-400 hover:text-red-600 transition-colors"
+            aria-label="Logout"
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
           </button>
         </div>
       </div>

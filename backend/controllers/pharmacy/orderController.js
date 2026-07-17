@@ -1,9 +1,13 @@
 import PurchaseOrder from "../../models/PharmacyPanel/PurchaseOrder.js";
 import Supplier from "../../models/PharmacyPanel/Supplier.js";
+import Medicine from "../../models/PharmacyPanel/Medicine.js";
+import Notification from "../../models/PharmacyPanel/Notification.js";
 
 const generateOrderId = async () => {
-  const count = await PurchaseOrder.countDocuments();
-  return `PO-${3000 + count + 1}`;
+  const last = await PurchaseOrder.findOne().sort({ createdAt: -1 }).select("orderId");
+  const lastNum = last ? parseInt(last.orderId.replace("PO-", ""), 10) : 3000;
+  const nextNum = (Number.isFinite(lastNum) ? lastNum : 3000) + 1;
+  return `PO-${nextNum}`;
 };
 
 const shapeOrder = (o) => ({
@@ -91,17 +95,42 @@ export const createOrder = async (req, res) => {
       supplierDoc = await Supplier.findById(supplier);
     }
 
-    const orderId = await generateOrderId();
+    if (!supplierDoc) {
+      return res.status(400).json({
+        success: false,
+        message: `Supplier "${supplier}" not found. Please add this supplier first or pick one from the list.`,
+      });
+    }
 
-    const order = await PurchaseOrder.create({
-      orderId,
-      supplier: supplierDoc ? supplierDoc._id : undefined,
-      supplierName: supplierDoc ? supplierDoc.name : supplier,
-      items: items || [],
-      amount: Number(amount) || 0,
-      status: "Pending",
-      createdBy: req.user._id,
-    });
+    let order;
+    try {
+      const orderId = await generateOrderId();
+      order = await PurchaseOrder.create({
+        orderId,
+        supplier: supplierDoc._id,
+        supplierName: supplierDoc.name,
+        items: items || [],
+        amount: Number(amount) || 0,
+        status: "Pending",
+        createdBy: req.user._id,
+      });
+    } catch (err) {
+      // Extremely rare race: two orders generated the same ID at once — retry once.
+      if (err.code === 11000 && err.keyPattern?.orderId) {
+        const orderId = await generateOrderId();
+        order = await PurchaseOrder.create({
+          orderId,
+          supplier: supplierDoc._id,
+          supplierName: supplierDoc.name,
+          items: items || [],
+          amount: Number(amount) || 0,
+          status: "Pending",
+          createdBy: req.user._id,
+        });
+      } else {
+        throw err;
+      }
+    }
 
     res.status(201).json({ success: true, message: "Purchase order placed successfully", data: shapeOrder(order) });
   } catch (error) {
@@ -125,8 +154,39 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
+    const wasAlreadyDelivered = order.status === "Delivered";
+
+    // When an order newly transitions to Delivered, add the ordered
+    // quantities back into stock for each medicine on the order.
+    if (status === "Delivered" && !wasAlreadyDelivered) {
+      for (const item of order.items) {
+        let medicine = null;
+
+        if (item.medicine) {
+          medicine = await Medicine.findById(item.medicine);
+        }
+        // Fallback: match by name if the item wasn't linked to a medicine record
+        if (!medicine && item.name) {
+          medicine = await Medicine.findOne({ name: item.name });
+        }
+
+        if (medicine) {
+          medicine.stock += item.quantity;
+          await medicine.save();
+        }
+      }
+    }
+
     order.status = status;
     await order.save();
+
+    if (status === "Delivered" && !wasAlreadyDelivered) {
+      await Notification.create({
+        user: req.user._id,
+        type: "Purchase Delivered",
+        text: `Order ${order.orderId} from ${order.supplierName} has been delivered and stock updated.`,
+      });
+    }
 
     res.status(200).json({ success: true, message: "Order status updated", data: shapeOrder(order) });
   } catch (error) {

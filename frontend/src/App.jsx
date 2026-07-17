@@ -28,11 +28,10 @@ import PatientBills from './PatientPanel/PatientBills.jsx';
 import NotificationsPage from './PatientPanel/Notifiactionspage.jsx';
 
 // Pharmacist Panel
-import PharmacyLogin from './PharmacistPanel/PharmacyLogin.jsx';
-import PharmacyRegister from './PharmacistPanel/PharmacyRegister.jsx';
 import PharmacyForgotPassword from './PharmacistPanel/PharmacyForgotPassword.jsx';
 import PharmacyResetPassword from './PharmacistPanel/PharmacyResetPassword.jsx';
 import PharmacyDashboard from './PharmacistPanel/PharmacyDashboard.jsx';
+import PharmacyProfile from './PharmacistPanel/PharmacyProfile.jsx';
 import Medicines from './PharmacistPanel/Medicines.jsx';
 import Prescription from './PharmacistPanel/Prescriptions.jsx';
 import Inventory from './PharmacistPanel/Inventory.jsx';
@@ -83,14 +82,15 @@ function App() {
         <Route path="/patient-bills" element={<PatientBills />} />
         <Route path="/patient-notifications" element={<NotificationsPage />} />
 
-        {/* Pharmacist Authentication */}
-        <Route path="/pharmacy/login" element={<PharmacyLogin />} />
-        <Route path="/pharmacy/register" element={<PharmacyRegister />} />
+        {/* Pharmacist Authentication (handled by generic /:role/login, /:role/register with role="pharmacist") */}
+        <Route path="/pharmacy/login" element={<Navigate to="/pharmacist/login" replace />} />
+        <Route path="/pharmacy/register" element={<Navigate to="/pharmacist/register" replace />} />
         <Route path="/pharmacy/forgot-password" element={<PharmacyForgotPassword />} />
         <Route path="/pharmacy/reset-password" element={<PharmacyResetPassword />} />
 
         {/* Pharmacist Dashboard */}
         <Route path="/pharmacy/dashboard" element={<PharmacyDashboard />} />
+        <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
         <Route path="/pharmacy/medicines" element={<Medicines />} />
         <Route path="/pharmacy/prescriptions" element={<Prescription />} />
         <Route path="/pharmacy/inventory" element={<Inventory />} />
@@ -115,7 +115,7 @@ function App() {
         {/* Redirect /pharmacy */}
         <Route
           path="/pharmacy"
-          element={<Navigate to="/pharmacy/login" replace />}
+          element={<Navigate to="/pharmacist/login" replace />}
         />
 
         {/* Generic Role Login/Register */}

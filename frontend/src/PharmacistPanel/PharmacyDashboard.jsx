@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, ClipboardList, AlertTriangle, IndianRupee,
@@ -9,11 +9,8 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import PharmacyNavbar from './PharmacyNavbar';
-import { StatCard, StatusBadge, Card } from './UI';
-import {
-  dashboardStats, weeklySales, categoryDistribution,
-  todaysPrescriptionRequests, inventoryOverview, activityTimeline,
-} from './mockData';
+import { StatCard, StatusBadge, Card, EmptyState } from './UI';
+import { pharmacyService } from '../services/pharmacyService';
 
 const quickActions = [
   { label: 'Add Medicine', icon: Plus, path: '/pharmacy/medicines/add' },
@@ -26,6 +23,39 @@ const quickActions = [
 const PharmacyDashboard = () => {
   const navigate = useNavigate();
 
+  const emptyStats = { totalMedicines: 0, pendingPrescriptions: 0, lowStock: 0, salesToday: 0 };
+  const [stats, setStats] = useState(emptyStats);
+  const [weeklySales, setWeeklySales] = useState([]);
+  const [categoryDistribution, setCategoryDistribution] = useState([]);
+  const [todaysPrescriptionRequests, setTodaysPrescriptionRequests] = useState([]);
+  const [inventoryOverview, setInventoryOverview] = useState([]);
+  const [activityTimeline, setActivityTimeline] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await pharmacyService.getDashboard();
+      const data = res.data || {};
+      setStats({ ...emptyStats, ...(data.stats || {}) });
+      setWeeklySales(data.weeklySales || []);
+      setCategoryDistribution(data.categoryDistribution || []);
+      setTodaysPrescriptionRequests(data.todaysPrescriptionRequests || []);
+      setInventoryOverview(data.inventoryOverview || []);
+      setActivityTimeline(data.activityTimeline || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <PharmacyNavbar />
@@ -35,12 +65,23 @@ const PharmacyDashboard = () => {
           <p className="text-gray-500 text-sm">Welcome back! Here's what's happening in your pharmacy</p>
         </div>
 
+        {error && (
+          <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-lg flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={loadDashboard} className="font-semibold hover:underline">Retry</button>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="py-16 text-center text-sm text-gray-400">Loading dashboard…</div>
+        ) : (
+        <>
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-          <StatCard title="TOTAL MEDICINES" value={dashboardStats.totalMedicines.toLocaleString()} icon={Package} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="PENDING PRESCRIPTION" value={dashboardStats.pendingPrescriptions} icon={ClipboardList} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="LOW STOCK ITEMS" value={dashboardStats.lowStock} icon={AlertTriangle} iconColor="text-amber-500" bgColor="bg-amber-50" />
-          <StatCard title="TODAY'S SALES" value={`Rs. ${dashboardStats.salesToday.toLocaleString()}`} icon={IndianRupee} iconColor="text-green-600" bgColor="bg-green-50" />
+          <StatCard title="TOTAL MEDICINES" value={stats.totalMedicines.toLocaleString()} icon={Package} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="PENDING PRESCRIPTION" value={stats.pendingPrescriptions} icon={ClipboardList} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="LOW STOCK ITEMS" value={stats.lowStock} icon={AlertTriangle} iconColor="text-amber-500" bgColor="bg-amber-50" />
+          <StatCard title="TODAY'S SALES" value={`Rs. ${stats.salesToday.toLocaleString()}`} icon={IndianRupee} iconColor="text-green-600" bgColor="bg-green-50" />
         </div>
 
         {/* Tables row */}
@@ -69,6 +110,7 @@ const PharmacyDashboard = () => {
                   ))}
                 </tbody>
               </table>
+              {todaysPrescriptionRequests.length === 0 && <EmptyState text="No prescription requests yet." />}
             </div>
           </Card>
 
@@ -96,6 +138,7 @@ const PharmacyDashboard = () => {
                   ))}
                 </tbody>
               </table>
+              {inventoryOverview.length === 0 && <EmptyState text="No inventory items yet." />}
             </div>
           </Card>
         </div>
@@ -121,15 +164,19 @@ const PharmacyDashboard = () => {
           </Card>
 
           <Card title="Medicine Category Distribution">
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie data={categoryDistribution} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                  {categoryDistribution.map((c) => <Cell key={c.name} fill={c.color} />)}
-                </Pie>
-                <Tooltip />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            {categoryDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie data={categoryDistribution} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
+                    {categoryDistribution.map((c) => <Cell key={c.name} fill={c.color} />)}
+                  </Pie>
+                  <Tooltip />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyState text="No medicines added yet." />
+            )}
           </Card>
         </div>
 
@@ -161,9 +208,12 @@ const PharmacyDashboard = () => {
                   </div>
                 </div>
               ))}
+              {activityTimeline.length === 0 && <EmptyState text="No recent activity." />}
             </div>
           </Card>
         </div>
+        </>
+        )}
       </main>
     </div>
   );

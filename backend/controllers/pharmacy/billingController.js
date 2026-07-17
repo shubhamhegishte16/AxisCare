@@ -1,5 +1,6 @@
 import Bill from "../../models/PharmacyPanel/Bill.js";
 import User from "../../models/user.js";
+import { notifyUser } from "../../utils/pharmacyNotify.js";
 
 const generateBillId = async () => {
   const count = await Bill.countDocuments();
@@ -105,6 +106,8 @@ export const createBill = async (req, res) => {
     });
 
     res.status(201).json({ success: true, message: "Bill generated successfully", data: shapeBill(bill) });
+
+    notifyUser(req.user._id, "Bill Generated", `Bill ${bill.billId} generated for ${bill.patientName} (Rs. ${bill.amount.toLocaleString()}).`);
   } catch (error) {
     console.error("Error in createBill:", error);
     res.status(500).json({ success: false, message: "Server error", error: error.message });

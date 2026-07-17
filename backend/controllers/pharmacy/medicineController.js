@@ -1,6 +1,27 @@
 import Medicine from "../../models/PharmacyPanel/Medicine.js";
+import { notifyPharmacists } from "../../utils/pharmacyNotify.js";
 
 const generateMedicineId = (doc) => `MED-${String(doc._id).slice(-6).toUpperCase()}`;
+
+// Fires Low Stock / Expiring Soon notifications when a medicine's computed
+// status newly crosses into that state (prevStatus is undefined for new medicines).
+const checkStockAndExpiryAlerts = async (medicine, prevStatus) => {
+  const status = medicine.status;
+
+  if ((status === "Low Stock" || status === "Out of Stock") && status !== prevStatus) {
+    await notifyPharmacists(
+      "Low Stock Alert",
+      `${medicine.name} is ${status === "Out of Stock" ? "out of stock" : "running low"} (${medicine.stock} units left).`
+    );
+  }
+
+  if (status === "Expiring Soon" && status !== prevStatus) {
+    await notifyPharmacists(
+      "Medicine Expiring",
+      `${medicine.name} (batch ${medicine.batch}) is expiring soon on ${new Date(medicine.expiry).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}.`
+    );
+  }
+};
 
 const shapeMedicine = (m) => ({
   id: generateMedicineId(m),
@@ -114,6 +135,8 @@ export const createMedicine = async (req, res) => {
     });
 
     res.status(201).json({ success: true, message: "Medicine added successfully", data: shapeMedicine(medicine) });
+
+    checkStockAndExpiryAlerts(medicine, undefined);
   } catch (error) {
     console.error("Error in createMedicine:", error);
     res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -134,6 +157,8 @@ export const updateMedicine = async (req, res) => {
       return res.status(404).json({ success: false, message: "Medicine not found" });
     }
 
+    const prevStatus = medicine.status;
+
     if (name !== undefined) medicine.name = name;
     if (genericName !== undefined) medicine.genericName = genericName;
     if (brand !== undefined) medicine.brand = brand;
@@ -152,6 +177,8 @@ export const updateMedicine = async (req, res) => {
     await medicine.save();
 
     res.status(200).json({ success: true, message: "Medicine updated successfully", data: shapeMedicine(medicine) });
+
+    checkStockAndExpiryAlerts(medicine, prevStatus);
   } catch (error) {
     console.error("Error in updateMedicine:", error);
     res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -192,10 +219,13 @@ export const adjustStock = async (req, res) => {
       return res.status(404).json({ success: false, message: "Medicine not found" });
     }
 
+    const prevStatus = medicine.status;
     medicine.stock = type === "add" ? medicine.stock + amt : Math.max(0, medicine.stock - amt);
     await medicine.save();
 
     res.status(200).json({ success: true, message: "Stock adjusted successfully", data: shapeMedicine(medicine) });
+
+    checkStockAndExpiryAlerts(medicine, prevStatus);
   } catch (error) {
     console.error("Error in adjustStock:", error);
     res.status(500).json({ success: false, message: "Server error", error: error.message });

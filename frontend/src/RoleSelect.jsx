@@ -15,7 +15,7 @@ const roles = [
   { key: 'receptionist', label: 'Receptionist', icon: Headset, authPath: 'receptionist' },
   { key: 'patient', label: 'Patient', icon: User, authPath: 'patient' },
   { key: 'lab', label: 'Laboratory Staff', icon: FlaskConical, authPath: 'lab' },
-  { key: 'pharmacist', label: 'Pharmacist', icon: Pill, authPath: 'pharmacy' },
+  { key: 'pharmacist', label: 'Pharmacist', icon: Pill, authPath: 'pharmacist' },
 ];
 
 export default function RoleSelect() {

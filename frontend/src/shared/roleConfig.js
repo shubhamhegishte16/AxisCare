@@ -34,9 +34,10 @@ export const roleConfig = {
     icon: FlaskConical,
     dashboard: '/lab',
   },
-  // Pharmacist has its own dedicated pages (/pharmacy/login, /pharmacy/register),
-  // but this entry lets getRoleConfig() resolve gracefully if ever routed generically.
-  pharmacy: {
+  // Keyed as "pharmacist" (not "pharmacy") because RoleRegister sends this
+  // key straight to the backend as the user's `role`, and the User model's
+  // role enum only accepts "pharmacist".
+  pharmacist: {
     label: 'Pharmacist',
     icon: Pill,
     dashboard: '/pharmacy/dashboard',

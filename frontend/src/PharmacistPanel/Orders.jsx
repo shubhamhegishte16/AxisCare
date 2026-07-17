@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, Truck, Clock, CheckCircle2, XCircle, Eye } from 'lucide-react';
+import { Search, Plus, Trash2, Truck, Clock, CheckCircle2, XCircle, Eye } from 'lucide-react';
 import PharmacyNavbar from './PharmacyNavbar';
 import { PageHeader, StatusBadge, StatCard, Card, Modal, EmptyState } from './UI';
 import { pharmacyService } from '../services/pharmacyService';
 
-const emptyForm = { supplier: '', amount: '' };
+const emptyItem = { medicine: '', name: '', quantity: 1, unitPrice: 0 };
+const emptyForm = { supplier: '', items: [{ ...emptyItem }] };
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [medicines, setMedicines] = useState([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, delivered: 0, totalValue: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -25,14 +27,16 @@ const Orders = () => {
     setLoading(true);
     setError('');
     try {
-      const [orderRes, statRes, supRes] = await Promise.all([
+      const [orderRes, statRes, supRes, medRes] = await Promise.all([
         pharmacyService.getOrders({ search: search || undefined, status: statusFilter !== 'All' ? statusFilter : undefined }),
         pharmacyService.getOrderStats(),
         pharmacyService.getSuppliers(),
+        pharmacyService.getMedicines(),
       ]);
       setOrders(orderRes.data || []);
       setStats(statRes.data || {});
       setSuppliers(supRes.data || []);
+      setMedicines(medRes.data || []);
     } catch (err) {
       setError(err.message || 'Failed to load orders');
     } finally {
@@ -45,12 +49,62 @@ const Orders = () => {
     return () => clearTimeout(timer);
   }, [loadData]);
 
+  const orderAmount = form.items.reduce(
+    (sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0),
+    0
+  );
+
+  const updateItem = (idx, patch) => {
+    setForm((f) => {
+      const items = [...f.items];
+      items[idx] = { ...items[idx], ...patch };
+      return { ...f, items };
+    });
+  };
+
+  const handleMedicineSelect = (idx, medicineId) => {
+    const med = medicines.find((m) => m._id === medicineId);
+    updateItem(idx, {
+      medicine: medicineId,
+      name: med ? med.name : '',
+      unitPrice: med ? (med.purchasePrice ?? med.price ?? 0) : 0,
+    });
+  };
+
+  const addItemRow = () => setForm((f) => ({ ...f, items: [...f.items, { ...emptyItem }] }));
+
+  const removeItemRow = (idx) =>
+    setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+
   const handleAdd = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setError('');
+
+    const items = form.items
+      .filter((it) => it.name && Number(it.quantity) > 0)
+      .map((it) => ({
+        medicine: it.medicine || undefined,
+        name: it.name,
+        quantity: Number(it.quantity),
+        unitPrice: Number(it.unitPrice) || 0,
+      }));
+
+    if (!form.supplier) {
+      setError('Please select a supplier');
+      return;
+    }
+    if (items.length === 0) {
+      setError('Add at least one medicine to the order');
+      return;
+    }
+
+    setSaving(true);
     try {
-      await pharmacyService.createOrder(form);
+      await pharmacyService.createOrder({
+        supplier: form.supplier,
+        items,
+        amount: orderAmount,
+      });
       setForm(emptyForm);
       setShowAdd(false);
       await loadData();
@@ -168,15 +222,61 @@ const Orders = () => {
               {suppliers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           </div>
+
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Order Amount (Rs.)</label>
-            <input
-              type="number"
-              value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700">Medicines to Order</label>
+              <button type="button" onClick={addItemRow} className="text-blue-600 text-xs font-semibold hover:underline flex items-center gap-1">
+                <Plus className="w-3.5 h-3.5" /> Add item
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {form.items.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                  <select
+                    value={item.medicine}
+                    onChange={(e) => handleMedicineSelect(idx, e.target.value)}
+                    className="col-span-6 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">Select medicine</option>
+                    {medicines.map((m) => <option key={m._id} value={m._id}>{m.name}</option>)}
+                  </select>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Qty"
+                    value={item.quantity}
+                    onChange={(e) => updateItem(idx, { quantity: e.target.value })}
+                    className="col-span-2 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Unit Rs."
+                    value={item.unitPrice}
+                    onChange={(e) => updateItem(idx, { unitPrice: e.target.value })}
+                    className="col-span-3 px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeItemRow(idx)}
+                    disabled={form.items.length === 1}
+                    className="col-span-1 text-gray-400 hover:text-red-600 disabled:opacity-30"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+            <span className="text-sm font-semibold text-gray-600">Order Total</span>
+            <span className="text-lg font-bold text-gray-900">Rs. {orderAmount.toLocaleString()}</span>
+          </div>
+
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
             <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">
@@ -188,11 +288,45 @@ const Orders = () => {
 
       <Modal open={!!viewItem} onClose={() => setViewItem(null)} title={viewItem?.id}>
         {viewItem && (
-          <div className="space-y-3 text-sm">
-            <Row label="Supplier" value={viewItem.supplier} />
-            <Row label="Date" value={viewItem.date} />
-            <Row label="Amount" value={`Rs. ${viewItem.amount.toLocaleString()}`} />
-            <Row label="Status" value={<StatusBadge status={viewItem.status} />} />
+          <div className="space-y-4 text-sm">
+            <div className="space-y-3">
+              <Row label="Supplier" value={viewItem.supplier} />
+              <Row label="Date" value={viewItem.date} />
+              <Row label="Status" value={<StatusBadge status={viewItem.status} />} />
+            </div>
+
+            {viewItem.items && viewItem.items.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Medicines Ordered</p>
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr className="text-left text-gray-400 text-xs uppercase">
+                        <th className="py-2 px-3 font-semibold">Medicine</th>
+                        <th className="py-2 px-3 font-semibold text-right">Qty</th>
+                        <th className="py-2 px-3 font-semibold text-right">Unit Price</th>
+                        <th className="py-2 px-3 font-semibold text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewItem.items.map((it, idx) => (
+                        <tr key={idx} className="border-t border-gray-50">
+                          <td className="py-2 px-3 font-medium text-gray-800">{it.name}</td>
+                          <td className="py-2 px-3 text-gray-500 text-right">{it.quantity}</td>
+                          <td className="py-2 px-3 text-gray-500 text-right">Rs. {it.unitPrice.toLocaleString()}</td>
+                          <td className="py-2 px-3 text-gray-700 text-right font-semibold">Rs. {(it.quantity * it.unitPrice).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+              <span className="font-semibold text-gray-600">Total Amount</span>
+              <span className="text-lg font-bold text-gray-900">Rs. {viewItem.amount.toLocaleString()}</span>
+            </div>
           </div>
         )}
       </Modal>
