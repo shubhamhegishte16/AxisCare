@@ -1,3 +1,4 @@
+// BookAppointmentModal.jsx - 
 import React, { useState, useEffect } from 'react';
 import {
     SquarePlus,
@@ -16,6 +17,7 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
     const [loading, setLoading] = useState(false);
     const [loadingDoctors, setLoadingDoctors] = useState(false);
     const [doctors, setDoctors] = useState([]);
+    const [allDoctors, setAllDoctors] = useState([]);
     const [formData, setFormData] = useState({
         fullName: '',
         phoneNumber: '',
@@ -39,7 +41,7 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
     useEffect(() => {
         if (isOpen) {
             loadPatientData();
-            loadDoctors();
+            loadAllDoctors();
         }
     }, [isOpen]);
 
@@ -63,18 +65,21 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
         }
     };
 
-    const loadDoctors = async () => {
+    const loadAllDoctors = async () => {
         try {
             setLoadingDoctors(true);
             setError('');
-            console.log('Fetching doctors...');
             
             const response = await appointmentService.getDoctors();
-            console.log('Doctors response:', response);
             
             if (response.success) {
-                setDoctors(response.data);
-                console.log('Doctors loaded:', response.data.length);
+                const doctorsList = response.data;
+                setAllDoctors(doctorsList);
+                setDoctors(doctorsList);
+                
+                if (doctorsList.length === 0) {
+                    setError('No doctors found in the system. Please contact admin.');
+                }
             } else {
                 setError('Failed to load doctors');
             }
@@ -90,8 +95,29 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
         
-        // If department changes, reset doctor selection
+        // If department changes, filter doctors and reset doctor selection
         if (name === 'department') {
+            if (value) {
+                // Filter doctors by department (case-insensitive)
+                const filtered = allDoctors.filter(doc => {
+                    const docDept = doc.department ? doc.department.toLowerCase().trim() : '';
+                    const selectedDept = value.toLowerCase().trim();
+                    return docDept === selectedDept;
+                });
+                
+                setDoctors(filtered);
+                
+                if (filtered.length === 0) {
+                    setError(`No doctors found in ${value} department.`);
+                } else {
+                    setError('');
+                }
+            } else {
+                setDoctors(allDoctors);
+                setError('');
+            }
+            
+            // Reset doctor selection
             setFormData(prev => ({ ...prev, doctor: '' }));
         }
     };
@@ -106,6 +132,12 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        
+        // Validate doctor selection
+        if (!formData.doctor) {
+            setError('Please select a doctor');
+            return;
+        }
         
         try {
             setLoading(true);
@@ -135,10 +167,16 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
 
     if (!isOpen) return null;
 
-    // Filter doctors by department if department is selected
-    const filteredDoctors = formData.department 
-        ? doctors.filter(doc => doc.department === formData.department)
-        : doctors;
+    const departmentOptions = [
+        'Cardiology',
+        'ENT',
+        'General Medicine',
+        'Orthopedics',
+        'Pediatrics',
+        'Dermatology',
+        'Ophthalmology',
+        'Neurology'
+    ];
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -256,14 +294,9 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
                                     required
                                 >
                                     <option value="">Select Department</option>
-                                    <option value="Cardiology">Cardiology</option>
-                                    <option value="ENT">ENT</option>
-                                    <option value="General Medicine">General Medicine</option>
-                                    <option value="Orthopedics">Orthopedics</option>
-                                    <option value="Pediatrics">Pediatrics</option>
-                                    <option value="Dermatology">Dermatology</option>
-                                    <option value="Ophthalmology">Ophthalmology</option>
-                                    <option value="Neurology">Neurology</option>
+                                    {departmentOptions.map(dept => (
+                                        <option key={dept} value={dept}>{dept}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
@@ -274,13 +307,18 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
                                     required
-                                    disabled={loadingDoctors}
+                                    disabled={loadingDoctors || !formData.department}
                                 >
-                                    <option value="">{loadingDoctors ? 'Loading doctors...' : 'Select Doctor'}</option>
-                                    {filteredDoctors.length === 0 && !loadingDoctors && formData.department && (
-                                        <option value="" disabled>No doctors available for this department</option>
-                                    )}
-                                    {filteredDoctors.map((doc) => (
+                                    <option value="">
+                                        {!formData.department 
+                                            ? 'Select department first' 
+                                            : loadingDoctors 
+                                            ? 'Loading doctors...' 
+                                            : doctors.length === 0 
+                                            ? 'No doctors available' 
+                                            : 'Select Doctor'}
+                                    </option>
+                                    {doctors.map((doc) => (
                                         <option key={doc._id} value={doc.fullName}>
                                             {doc.fullName} {doc.department ? `(${doc.department})` : ''}
                                         </option>
@@ -291,8 +329,17 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
                                         <Loader2 className="w-3 h-3 animate-spin" /> Loading doctors...
                                     </p>
                                 )}
-                                {!loadingDoctors && doctors.length === 0 && (
-                                    <p className="text-red-500 text-xs mt-1">No doctors found. Please contact support.</p>
+                                {!loadingDoctors && formData.department && doctors.length === 0 && (
+                                    <p className="text-red-500 text-xs mt-1">
+                                        No doctors available in {formData.department} department.
+                                        <button 
+                                            type="button"
+                                            onClick={loadAllDoctors}
+                                            className="text-blue-500 hover:underline ml-1"
+                                        >
+                                            Refresh
+                                        </button>
+                                    </p>
                                 )}
                             </div>
                             <div>
@@ -383,8 +430,8 @@ export default function BookAppointmentModal({ isOpen, onClose }) {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="px-6 py-2 bg-[#00B4D8] hover:bg-[#0096B4] text-white rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50"
+                            disabled={loading || !formData.doctor}
+                            className="px-6 py-2 bg-[#00B4D8] hover:bg-[#0096B4] text-white rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? (
                                 <>
