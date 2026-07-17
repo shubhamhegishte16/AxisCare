@@ -75,7 +75,7 @@ export const getAllAppointments = async (req, res) => {
 export const updateAppointmentStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const allowed = ['Pending', 'Scheduled', 'Completed', 'Cancelled'];
+    const allowed = ['Pending', 'Scheduled', 'Rescheduled', 'Completed', 'Cancelled'];
     if (!allowed.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status value.' });
     const appointment = await Appointment.findByIdAndUpdate(req.params.id, { status }, { new: true });
     if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found.' });
