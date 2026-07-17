@@ -9,10 +9,12 @@ import {
     X
 } from 'lucide-react';
 import Navbar from './Navbar.jsx';
+import BookAppointmentModal from './BookAppointmentModal.jsx';
 
 export default function AppointmentsDashboard() {
     const [activeTab, setActiveTab] = useState('All');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
     const appointmentsData = [
         {
@@ -60,7 +62,10 @@ export default function AppointmentsDashboard() {
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#0f4c81]">
                             My Appointments
                         </h1>
-                        <button className="bg-[#00B4D8] hover:bg-[#0096B4] text-white font-medium py-2.5 px-6 rounded-lg flex items-center justify-center space-x-2 shadow transition-all self-start sm:self-auto w-full sm:w-auto">
+                        <button 
+                            className="bg-[#00B4D8] hover:bg-[#0096B4] text-white font-medium py-2.5 px-6 rounded-lg flex items-center justify-center space-x-2 shadow transition-all self-start sm:self-auto w-full sm:w-auto"
+                            onClick={() => setIsBookingModalOpen(true)}
+                        >
                             <span className="text-xl leading-none font-light">+</span>
                             <span>Book Appointment</span>
                         </button>
@@ -159,6 +164,12 @@ export default function AppointmentsDashboard() {
                     </div>
                 </div>
             </main>
+
+            {/* Book Appointment Modal */}
+            <BookAppointmentModal 
+                isOpen={isBookingModalOpen} 
+                onClose={() => setIsBookingModalOpen(false)} 
+            />
         </div>
     );
 }

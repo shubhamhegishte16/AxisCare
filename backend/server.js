@@ -11,6 +11,7 @@ import doctorRoutes from "./routes/doctorRoutes.js";
 
 //Patinet Panel
 import patientRoutes from './routes/patientRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use("/api/doctor", doctorRoutes);
 
 //patient Panel
 app.use("/api/patient", patientRoutes);
+app.use("/api/appointments", appointmentRoutes);
 
 const PORT = process.env.PORT || 5000;
 

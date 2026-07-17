@@ -1,0 +1,97 @@
+import Appointment from '../models/Appointment.js';
+import Patient from '../models/Patient.js';
+import User from '../models/user.js';
+const generateAppointmentId = () => `#APT-${Math.floor(100000 + Math.random() * 900000)}`;
+// POST /api/appointments — patient books appointment
+export const bookAppointment = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const patient = await Patient.findOne({ userId });
+    if (!patient) return res.status(404).json({ success: false, message: 'Patient profile not found. Please complete your profile first.' });
+    const { fullName, phoneNumber, email, age, gender, address, department, doctor, doctorProfileId, appointmentType, preferredDate, preferredTime, reasonForVisit, symptoms } = req.body;
+    if (!fullName || !phoneNumber || !email || !age || !gender || !address || !department || !doctor || !appointmentType || !preferredDate || !preferredTime || !reasonForVisit) {
+      return res.status(400).json({ success: false, message: 'Please fill all required fields.' });
+    }
+    const appointmentId = generateAppointmentId();
+    const documentPath = req.file ? `/uploads/${req.file.filename}` : null;
+    const appointment = new Appointment({
+      userId,
+      patientId: patient._id,
+      appointmentId,
+      fullName, phoneNumber, email, age, gender, address,
+      department, doctor,
+      doctorProfileId: doctorProfileId || null,
+      appointmentType, preferredDate, preferredTime,
+      reasonForVisit,
+      symptoms: symptoms || '',
+      documentPath,
+    });
+    await appointment.save();
+    res.status(201).json({ success: true, message: 'Appointment request submitted successfully.', data: appointment });
+  } catch (error) {
+    console.error('Error in bookAppointment:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+// GET /api/appointments/mine — get logged-in patient's appointments
+export const getMyAppointments = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const appointments = await Appointment.find({ userId }).sort({ createdAt: -1 });
+    res.status(200).json({ success: true, count: appointments.length, data: appointments });
+  } catch (error) {
+    console.error('Error in getMyAppointments:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+// PUT /api/appointments/:id/cancel — patient cancels their appointment
+export const cancelAppointment = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const appointment = await Appointment.findOne({ _id: req.params.id, userId });
+    if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found.' });
+    if (['Completed', 'Cancelled'].includes(appointment.status)) {
+      return res.status(400).json({ success: false, message: `Cannot cancel an appointment with status '${appointment.status}'.` });
+    }
+    appointment.status = 'Cancelled';
+    await appointment.save();
+    res.status(200).json({ success: true, message: 'Appointment cancelled.', data: appointment });
+  } catch (error) {
+    console.error('Error in cancelAppointment:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+// GET /api/appointments/all — admin / receptionist
+export const getAllAppointments = async (req, res) => {
+  try {
+    const appointments = await Appointment.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, count: appointments.length, data: appointments });
+  } catch (error) {
+    console.error('Error in getAllAppointments:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+// PUT /api/appointments/:id/status — admin / receptionist updates status
+export const updateAppointmentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const allowed = ['Pending', 'Scheduled', 'Completed', 'Cancelled'];
+    if (!allowed.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status value.' });
+    const appointment = await Appointment.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found.' });
+    res.status(200).json({ success: true, message: 'Status updated.', data: appointment });
+  } catch (error) {
+    console.error('Error in updateAppointmentStatus:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+// GET /api/appointments/doctors — fetch all doctors from User collection (role: doctor)
+export const getDoctorsByDepartment = async (req, res) => {
+  try {
+    const doctors = await User.find({ role: 'doctor', isActive: true }).select('_id fullName department').sort({ fullName: 1 });
+    res.status(200).json({ success: true, data: doctors });
+  } catch (error) {
+    console.error('Error in getDoctorsByDepartment:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
