@@ -37,6 +37,7 @@ const userSchema = new mongoose.Schema(
         "receptionist",
         "patient",
         "laboratory",
+        "lab",
         "pharmacist",
       ],
       required: true,

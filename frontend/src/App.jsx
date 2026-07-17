@@ -52,6 +52,12 @@ import ReceptionistReports from './receptionist/Reports.jsx';
 import ReceptionistNotifications from './receptionist/ReceptionistNotifications.jsx';
 import ReceptionistSettings from './receptionist/ReceptionistSettings.jsx';
 
+import LabDashboard from './laboratory_panel/LabDashboard';
+import LabRequests from './laboratory_panel/LabRequests';
+import LabResults from './laboratory_panel/LabResults';
+import LabHistory from './laboratory_panel/LabHistory';
+import LabSettings from './laboratory_panel/LabSettings';
+
 function App() {
   return (
     <Router>
@@ -117,6 +123,14 @@ function App() {
           path="/pharmacy"
           element={<Navigate to="/pharmacist/login" replace />}
         />
+
+        {/* Laboratory Panel */}
+        <Route path="/lab" element={<LabDashboard />} />
+        <Route path="/lab/dashboard" element={<Navigate to="/lab" replace />} />
+        <Route path="/lab/requests" element={<LabRequests />} />
+        <Route path="/lab/results" element={<LabResults />} />
+        <Route path="/lab/history" element={<LabHistory />} />
+        <Route path="/lab/settings" element={<LabSettings />} />
 
         {/* Generic Role Login/Register */}
         <Route path="/:role/login" element={<RoleLogin />} />
