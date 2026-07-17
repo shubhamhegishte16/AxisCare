@@ -15,6 +15,7 @@ import patientRoutes from "./routes/patientRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import PatientNotificationRoutes from "./routes/PatientNotificationRoutes.js";
 import medicalHistoryRoutes from './routes/medicalHistoryRoutes.js';
+import LabAppointmentRoutes from './routes/LabAppointmentRoutes.js';
 
 // Receptionist Panel
 import receptionistRoutes from "./routes/receptionistRoutes.js";
@@ -71,6 +72,7 @@ app.use("/api/patient", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/notifications", PatientNotificationRoutes);
 app.use("/api/medical", medicalHistoryRoutes);
+app.use('/api/lab-appointments', LabAppointmentRoutes);
 
 // ================= Receptionist =================
 app.use("/api/receptionist", receptionistRoutes);

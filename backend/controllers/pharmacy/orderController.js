@@ -2,6 +2,7 @@ import PurchaseOrder from "../../models/PharmacyPanel/PurchaseOrder.js";
 import Supplier from "../../models/PharmacyPanel/Supplier.js";
 import Medicine from "../../models/PharmacyPanel/Medicine.js";
 import Notification from "../../models/PharmacyPanel/Notification.js";
+import Order from '../../models/PharmacyPanel/Order.js';
 
 const generateOrderId = async () => {
   const last = await PurchaseOrder.findOne().sort({ createdAt: -1 }).select("orderId");
@@ -192,5 +193,88 @@ export const updateOrderStatus = async (req, res) => {
   } catch (error) {
     console.error("Error in updateOrderStatus:", error);
     res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+// ============================================
+// PATIENT ORDER ROUTES
+// ============================================
+
+// Create order from prescription (patient)
+export const createOrderFromPrescription = async (req, res) => {
+  try {
+    console.log('Patient creating order from prescription');
+    console.log('User:', req.user._id);
+    console.log('Body:', req.body);
+
+    const userId = req.user._id;
+    const { prescriptionId, items, patientName, doctorName } = req.body;
+
+    // Validate required fields
+    if (!prescriptionId || !items || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Prescription ID and items are required'
+      });
+    }
+
+    // Calculate total amount
+    const totalAmount = items.reduce((sum, item) => sum + (item.quantity || 1) * (item.price || 0), 0);
+
+    // Create order using the imported Order model
+    const order = new Order({
+      userId,
+      prescriptionId,
+      patientName: patientName || req.user.fullName,
+      doctorName: doctorName || 'N/A',
+      items: items.map(item => ({
+        medicineName: item.name || item.medicineName || item.medicine || 'N/A',
+        dosage: item.dosage || '',
+        quantity: item.quantity || 1,
+        instructions: item.instructions || '',
+        price: item.price || 0,
+      })),
+      supplier: null,  // No supplier for patient orders
+      amount: totalAmount,
+      status: 'Pending',
+      orderDate: new Date(),
+    });
+
+    await order.save();
+
+    console.log('Order created:', order._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      data: order,
+    });
+  } catch (error) {
+    console.error('Error in createOrderFromPrescription:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create order',
+      error: error.message,
+    });
+  }
+};
+
+// Get patient orders
+export const getPatientOrders = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      data: orders,
+    });
+  } catch (error) {
+    console.error('Error in getPatientOrders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders',
+      error: error.message,
+    });
   }
 };

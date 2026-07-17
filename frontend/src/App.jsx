@@ -26,6 +26,7 @@ import PatientMedical from './PatientPanel/PatientMedical.jsx';
 import PatientAppointments from './PatientPanel/PatientAppointments.jsx';
 import PatientBills from './PatientPanel/PatientBills.jsx';
 import NotificationsPage from './PatientPanel/Notifiactionspage.jsx';
+import BookLabAppointmentPage from './PatientPanel/BookLabAppointment.jsx';
 
 // Pharmacist Panel
 import PharmacyForgotPassword from './PharmacistPanel/PharmacyForgotPassword.jsx';
@@ -87,6 +88,7 @@ function App() {
         <Route path="/patient-appointments" element={<PatientAppointments />} />
         <Route path="/patient-bills" element={<PatientBills />} />
         <Route path="/patient-notifications" element={<NotificationsPage />} />
+        <Route path="/lab-appointments/book" element={<BookLabAppointmentPage />} />
 
         {/* Pharmacist Authentication (handled by generic /:role/login, /:role/register with role="pharmacist") */}
         <Route path="/pharmacy/login" element={<Navigate to="/pharmacist/login" replace />} />

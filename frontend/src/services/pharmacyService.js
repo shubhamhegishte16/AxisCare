@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/pharmacy';
+const API_URL = 'http://localhost:5000/api' || 'http://localhost:5000/api/pharmacy';
 
 const pharmacyApi = axios.create({
   baseURL: API_URL,
@@ -28,6 +28,32 @@ const handle = async (promise, fallbackMessage) => {
 };
 
 export const pharmacyService = {
+  // ============================================
+  // PATIENT ORDER ROUTES
+  // ============================================
+  createOrderFromPrescription: async (data) => {
+    try {
+      console.log('Creating order from prescription:', data);
+      
+      const response = await pharmacyApi.post('/pharmacy/patient/create', data);
+      console.log('Order created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error in createOrderFromPrescription:', error);
+      throw error.response?.data || { success: false, message: 'Failed to create order' };
+    }
+  },
+
+  getPatientOrders: async () => {
+    try {
+      const response = await pharmacyApi.get('/pharmacy/patient/orders');
+      return response.data;
+    } catch (error) {
+      console.error('Error in getPatientOrders:', error);
+      throw error.response?.data || { success: false, message: 'Failed to fetch orders' };
+    }
+  },
+
   // Dashboard
   getDashboard: () => handle(pharmacyApi.get('/dashboard'), 'Failed to fetch dashboard data'),
 

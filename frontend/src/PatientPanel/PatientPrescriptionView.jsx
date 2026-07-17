@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
-import { 
-  FileText, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
-  XCircle, 
-  Search, 
+import {
+  FileText,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Search,
   Eye,
   Printer,
   Loader2,
@@ -83,7 +83,7 @@ export default function PatientPrescriptionView() {
 
   const handlePrint = (rx) => {
     const printWindow = window.open('', '_blank');
-    const medicinesHTML = rx.medicines && rx.medicines.length > 0 
+    const medicinesHTML = rx.medicines && rx.medicines.length > 0
       ? rx.medicines.map(m => `
         <tr>
           <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>${m.name}</strong></td>
@@ -238,7 +238,7 @@ export default function PatientPrescriptionView() {
 
   const getFilteredPrescriptions = () => {
     let filtered = prescriptions;
-    
+
     // Filter by tab
     if (activeTab === 'Active') {
       filtered = filtered.filter(p => p.status === 'Generated' || p.status === 'Active');
@@ -247,16 +247,16 @@ export default function PatientPrescriptionView() {
     } else if (activeTab === 'Lab Tests') {
       filtered = filtered.filter(p => p.labTests && p.labTests.length > 0);
     }
-    
+
     // Filter by search
     if (searchQuery) {
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.prescriptionId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.doctorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.diagnosisPrimary?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     return filtered;
   };
 
@@ -293,7 +293,7 @@ export default function PatientPrescriptionView() {
             <p className="text-gray-500 text-sm">View all your prescriptions and manage medications.</p>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => window.location.href = '/patient-appointments'}
               className="flex items-center gap-2 bg-[#00B9D6] text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-[#00a3bd] transition-colors"
             >
@@ -318,11 +318,10 @@ export default function PatientPrescriptionView() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                  activeTab === tab
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeTab === tab
                     ? 'bg-[#00B9D6] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {tab}
               </button>
@@ -330,11 +329,11 @@ export default function PatientPrescriptionView() {
           </div>
           <div className="relative flex-1 w-full xl:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by ID, doctor, or diagnosis..." 
+              placeholder="Search by ID, doctor, or diagnosis..."
               className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00B9D6] focus:border-transparent transition-all"
             />
           </div>
@@ -391,7 +390,7 @@ export default function PatientPrescriptionView() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => handleViewDetails(rx)}
                           className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-500 hover:text-blue-700"
                           title="View Details"
@@ -399,7 +398,7 @@ export default function PatientPrescriptionView() {
                           <Eye className="w-4 h-4" />
                         </button>
                         {rx.status === 'Generated' && rx.medicines?.length > 0 && (
-                          <button 
+                          <button
                             onClick={() => handlePurchaseMedicines(rx)}
                             className="p-2 hover:bg-green-50 rounded-lg transition-colors text-green-500 hover:text-green-700"
                             title="Purchase Medicines"
@@ -408,7 +407,7 @@ export default function PatientPrescriptionView() {
                           </button>
                         )}
                         {rx.labTests && rx.labTests.length > 0 && rx.status !== 'Completed' && (
-                          <button 
+                          <button
                             onClick={() => handleBookLabAppointment(rx)}
                             className="p-2 hover:bg-orange-50 rounded-lg transition-colors text-orange-500 hover:text-orange-700"
                             title="Book Lab Appointment"
@@ -636,7 +635,7 @@ const ViewPrescriptionModal = ({ prescription, onClose, onPrint, onPurchase, onL
         {/* Action Buttons */}
         <div className="p-6 border-t border-gray-200 flex flex-wrap justify-end gap-3 bg-gray-50 rounded-b-xl">
           {prescription.status === 'Generated' && prescription.medicines?.length > 0 && (
-            <button 
+            <button
               onClick={() => {
                 onClose();
                 onPurchase(prescription);
@@ -648,10 +647,10 @@ const ViewPrescriptionModal = ({ prescription, onClose, onPrint, onPurchase, onL
             </button>
           )}
           {prescription.labTests && prescription.labTests.length > 0 && prescription.status !== 'Completed' && (
-            <button 
+            <button
               onClick={() => {
-                onClose();
-                onLabAppointment(prescription);
+                setIsModalOpen(false);
+                handleBookLabAppointment(selectedPrescription);
               }}
               className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
             >
@@ -659,14 +658,14 @@ const ViewPrescriptionModal = ({ prescription, onClose, onPrint, onPurchase, onL
               Book Lab Appointment
             </button>
           )}
-          <button 
+          <button
             onClick={() => onPrint(prescription)}
             className="flex items-center gap-2 bg-[#0b3363] hover:bg-[#082449] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
           >
             <Printer className="w-4 h-4" />
             Print PDF
           </button>
-          <button 
+          <button
             onClick={onClose}
             className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
           >
@@ -722,14 +721,14 @@ const PurchaseMedicinesModal = ({ prescription, medicines, onClose, onConfirm, l
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     onClick={() => updateQuantity(idx, -1)}
                     className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
                   <span className="w-8 text-center font-bold">{quantities[idx]}</span>
-                  <button 
+                  <button
                     onClick={() => updateQuantity(idx, 1)}
                     className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition"
                   >
@@ -749,13 +748,13 @@ const PurchaseMedicinesModal = ({ prescription, medicines, onClose, onConfirm, l
         </div>
 
         <div className="p-6 border-t border-gray-200 flex justify-end gap-3 bg-gray-50 rounded-b-xl">
-          <button 
+          <button
             onClick={onClose}
             className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition"
           >
             Cancel
           </button>
-          <button 
+          <button
             onClick={onConfirm}
             disabled={loading}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-semibold transition shadow-sm disabled:opacity-50"

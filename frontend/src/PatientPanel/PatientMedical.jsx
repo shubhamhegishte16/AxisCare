@@ -7,6 +7,9 @@ import {
     CheckCircle2, Clock, Package, Building2, FileCheck
 } from 'lucide-react';
 import { medicalService } from '../services/medicalHistoryService.js';
+import { pharmacyService } from '../services/pharmacyService.js';
+import PurchaseMedicinesModal from './PurchaseMedicalModal.jsx';
+import BookLabAppointment from './BookLabAppointment.jsx';
 
 const VitalsIcon = ({ type }) => {
     switch (type) {
@@ -108,12 +111,31 @@ export default function PatientMedical() {
     const searchSectionRef = useRef(null);
     const searchInputRef = useRef(null);
 
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+    const [selectedPrescriptionForPurchase, setSelectedPrescriptionForPurchase] = useState(null);
+
+    const [isLabAppointmentModalOpen, setIsLabAppointmentModalOpen] = useState(false);
+    const [selectedPrescriptionForLab, setSelectedPrescriptionForLab] = useState(null);
+
     const tabs = ['All Visits', 'Consultation', 'Lab Tests', 'Medications'];
 
     // Load data on mount
     useEffect(() => {
         fetchAllData();
     }, []);
+
+    // Handle purchase medicines - Updated to open modal instead of redirect
+    const handlePurchaseMedicines = (prescription) => {
+        setSelectedPrescriptionForPurchase(prescription);
+        setIsPurchaseModalOpen(true);
+    };
+
+    // Handle purchase complete
+    const handlePurchaseComplete = (order) => {
+        console.log('Purchase complete:', order);
+        // Refresh medications data
+        fetchAllData();
+    };
 
     const fetchAllData = async () => {
         try {
@@ -462,15 +484,10 @@ export default function PatientMedical() {
         printWindow.document.close();
     };
 
-    // Handle purchase medicines (redirect to pharmacy)
-    const handlePurchaseMedicines = (prescription) => {
-        // Redirect to pharmacy module with prescription details
-        window.location.href = `/pharmacy/purchase?prescriptionId=${prescription._id}`;
-    };
-
-    // Handle lab appointment booking
+    // Handle lab appointment booking - Opens modal instead of redirect
     const handleBookLabAppointment = (prescription) => {
-        window.location.href = `/lab-appointments/book?prescriptionId=${prescription._id}`;
+        setSelectedPrescriptionForLab(prescription);
+        setIsLabAppointmentModalOpen(true);
     };
 
     if (loading) {
@@ -962,15 +979,27 @@ export default function PatientMedical() {
                             </div>
 
                             {/* Lab Tests */}
-                            {selectedPrescription.labTests && selectedPrescription.labTests.length > 0 && (
+                            {selectedPrescription.labTests && (
                                 <div>
                                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Lab Tests Recommended</h4>
                                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                                        <ul className="list-disc list-inside text-sm text-gray-700">
-                                            {selectedPrescription.labTests.map((test, idx) => (
-                                                <li key={idx}>{test}</li>
-                                            ))}
-                                        </ul>
+                                        {typeof selectedPrescription.labTests === 'string' ? (
+                                            // If it's a string, split by comma or newline
+                                            <ul className="list-disc list-inside text-sm text-gray-700">
+                                                {selectedPrescription.labTests.split(',').map((test, idx) => (
+                                                    <li key={idx}>{test.trim()}</li>
+                                                ))}
+                                            </ul>
+                                        ) : Array.isArray(selectedPrescription.labTests) ? (
+                                            // If it's already an array
+                                            <ul className="list-disc list-inside text-sm text-gray-700">
+                                                {selectedPrescription.labTests.map((test, idx) => (
+                                                    <li key={idx}>{test}</li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-gray-700">{selectedPrescription.labTests}</p>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -1007,7 +1036,10 @@ export default function PatientMedical() {
                         <div className="p-6 border-t border-gray-200 flex flex-wrap justify-end gap-3 bg-gray-50 rounded-b-xl">
                             {selectedPrescription.status === 'Generated' && selectedPrescription.medicines?.length > 0 && (
                                 <button
-                                    onClick={() => handlePurchaseMedicines(selectedPrescription)}
+                                    onClick={() => {
+                                        setIsModalOpen(false);
+                                        handlePurchaseMedicines(selectedPrescription);
+                                    }}
                                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
                                 >
                                     <ShoppingBag className="w-4 h-4" />
@@ -1016,7 +1048,10 @@ export default function PatientMedical() {
                             )}
                             {selectedPrescription.labTests && selectedPrescription.labTests.length > 0 && selectedPrescription.status !== 'Completed' && (
                                 <button
-                                    onClick={() => handleBookLabAppointment(selectedPrescription)}
+                                    onClick={() => {
+                                        setIsModalOpen(false);
+                                        handleBookLabAppointment(selectedPrescription);
+                                    }}
                                     className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
                                 >
                                     <Syringe className="w-4 h-4" />
@@ -1107,6 +1142,31 @@ export default function PatientMedical() {
                     </div>
                 </div>
             )}
+            {/* Purchase Medicines Modal */}
+            <PurchaseMedicinesModal
+                isOpen={isPurchaseModalOpen}
+                onClose={() => {
+                    setIsPurchaseModalOpen(false);
+                    setSelectedPrescriptionForPurchase(null);
+                }}
+                prescription={selectedPrescriptionForPurchase}
+                onPurchaseComplete={handlePurchaseComplete}
+            />
+
+            {/* Book Lab Appointment Modal */}
+            <BookLabAppointment
+                isOpen={isLabAppointmentModalOpen}
+                onClose={() => {
+                    setIsLabAppointmentModalOpen(false);
+                    setSelectedPrescriptionForLab(null);
+                }}
+                prescription={selectedPrescriptionForLab}
+                onSuccess={() => {
+                    setIsLabAppointmentModalOpen(false);
+                    // Refresh data
+                    fetchAllData();
+                }}
+            />
         </div>
     );
 }

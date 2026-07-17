@@ -6,12 +6,19 @@ import {
   getOrderById,
   createOrder,
   updateOrderStatus,
+  createOrderFromPrescription,
+  getPatientOrders
 } from "../../controllers/pharmacy/orderController.js";
 
 const router = express.Router();
 
 router.use(protect);
-router.use(authorizeRole("pharmacist"));
+
+// Routes accessible by patients (for creating orders)
+router.post("/patient/create", createOrderFromPrescription);
+router.get("/patient/orders", getPatientOrders);
+
+router.use(authorizeRole("pharmacist", "patient"));
 
 router.get("/stats", getOrderStats);
 
