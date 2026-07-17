@@ -1,0 +1,462 @@
+import React, { useState } from 'react';
+import {
+  CalendarCheck,
+  Users,
+  UserPlus2,
+  Stethoscope,
+  Eye,
+  LogIn,
+  RefreshCcw,
+  PhoneCall,
+  CheckCircle2,
+  UserPlus,
+  CalendarPlus,
+  BadgeCheck,
+  Printer,
+  Siren,
+  Bell,
+  FileCheck2,
+  Receipt,
+  AlertTriangle,
+} from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
+import ReceptionistLayout from './ReceptionistLayout';
+
+/* ---------------- Mock data ---------------- */
+
+const summaryCards = [
+  { label: "Today's Appointments", value: 128, icon: CalendarCheck, dot: 'bg-blue-500' },
+  { label: 'Walk-in Patients', value: 26, icon: Users, dot: 'bg-cyan-500' },
+  { label: 'New Registrations', value: 18, icon: UserPlus2, dot: 'bg-emerald-500' },
+  { label: 'Available Doctors', value: 22, icon: Stethoscope, dot: 'bg-amber-500' },
+];
+
+const appointments = [
+  { time: '09:00 AM', name: 'Rajesh Kumar', doctor: 'Dr. Ananya Sharma', dept: 'Cardiology', status: 'Scheduled' },
+  { time: '09:30 AM', name: 'Priya Mehta', doctor: 'Dr. Vikram Rao', dept: 'Orthopedics', status: 'Checked In' },
+  { time: '10:00 AM', name: 'Amit Verma', doctor: 'Dr. Neha Kapoor', dept: 'Neurology', status: 'Waiting' },
+  { time: '10:15 AM', name: 'Sunita Rao', doctor: 'Dr. Ananya Sharma', dept: 'Cardiology', status: 'Cancelled' },
+  { time: '10:45 AM', name: 'Karan Malhotra', doctor: 'Dr. Farhan Ali', dept: 'Dermatology', status: 'Scheduled' },
+  { time: '11:00 AM', name: 'Neha Patil', doctor: 'Dr. Vikram Rao', dept: 'Orthopedics', status: 'Checked In' },
+];
+
+const statusStyles = {
+  Scheduled: 'bg-blue-50 text-blue-600',
+  'Checked In': 'bg-emerald-50 text-emerald-600',
+  Waiting: 'bg-amber-50 text-amber-600',
+  Cancelled: 'bg-red-50 text-red-500',
+};
+
+const walkInQueue = [
+  { no: 'Q-104', name: 'Deepak Joshi', arrival: '10:12 AM', priority: 'Normal' },
+  { no: 'Q-105', name: 'Ritu Singh', arrival: '10:18 AM', priority: 'Emergency' },
+  { no: 'Q-106', name: 'Manoj Tiwari', arrival: '10:25 AM', priority: 'Normal' },
+];
+
+const quickActions = [
+  { label: 'Register Patient', icon: UserPlus },
+  { label: 'Book Appointment', icon: CalendarPlus },
+  { label: 'Generate Patient ID', icon: BadgeCheck },
+  { label: 'Print Queue Token', icon: Printer },
+  { label: 'Emergency Registration', icon: Siren, danger: true },
+];
+
+const doctors = [
+  { name: 'Dr. Ananya Sharma', dept: 'Cardiology', status: 'Available', img: 'https://i.pravatar.cc/150?img=32' },
+  { name: 'Dr. Vikram Rao', dept: 'Orthopedics', status: 'Busy', img: 'https://i.pravatar.cc/150?img=13' },
+  { name: 'Dr. Neha Kapoor', dept: 'Neurology', status: 'Available', img: 'https://i.pravatar.cc/150?img=25' },
+  { name: 'Dr. Farhan Ali', dept: 'Dermatology', status: 'On Leave', img: 'https://i.pravatar.cc/150?img=51' },
+];
+
+const doctorStatusStyles = {
+  Available: 'bg-emerald-50 text-emerald-600',
+  Busy: 'bg-amber-50 text-amber-600',
+  'On Leave': 'bg-red-50 text-red-500',
+};
+
+const notifications = [
+  { title: 'Appointment Reminder', desc: 'Rajesh Kumar in 15 minutes', time: '9m ago', unread: true, icon: CalendarCheck },
+  { title: 'New Walk-in', desc: 'Ritu Singh added to queue', time: '18m ago', unread: true, icon: Users },
+  { title: 'Lab Report Ready', desc: 'Amit Verma — CBC report', time: '32m ago', unread: false, icon: FileCheck2 },
+  { title: 'Billing Completed', desc: 'Invoice #2291 settled', time: '1h ago', unread: false, icon: Receipt },
+  { title: 'Emergency Case', desc: 'Ritu Singh flagged priority', time: '2h ago', unread: true, icon: AlertTriangle },
+];
+
+const trendData = [
+  { day: 'Mon', appts: 82 }, { day: 'Tue', appts: 95 }, { day: 'Wed', appts: 88 },
+  { day: 'Thu', appts: 110 }, { day: 'Fri', appts: 128 }, { day: 'Sat', appts: 74 }, { day: 'Sun', appts: 40 },
+];
+
+const visitsData = [
+  { day: 'Mon', visits: 40 }, { day: 'Tue', visits: 55 }, { day: 'Wed', visits: 48 },
+  { day: 'Thu', visits: 62 }, { day: 'Fri', visits: 70 }, { day: 'Sat', visits: 38 }, { day: 'Sun', visits: 20 },
+];
+
+const deptData = [
+  { name: 'Cardiology', value: 32, color: '#2563EB' },
+  { name: 'Orthopedics', value: 24, color: '#06B6D4' },
+  { name: 'Neurology', value: 18, color: '#60A5FA' },
+  { name: 'Dermatology', value: 14, color: '#A5F3FC' },
+  { name: 'Others', value: 12, color: '#CBD5E1' },
+];
+
+const recentPatients = [
+  { id: 'PT-2291', name: 'Rajesh Kumar', doctor: 'Dr. Ananya Sharma', time: '09:12 AM', status: 'Checked In' },
+  { id: 'PT-2292', name: 'Priya Mehta', doctor: 'Dr. Vikram Rao', time: '09:35 AM', status: 'Checked In' },
+  { id: 'PT-2293', name: 'Amit Verma', doctor: 'Dr. Neha Kapoor', time: '10:02 AM', status: 'Waiting' },
+  { id: 'PT-2294', name: 'Sunita Rao', doctor: 'Dr. Ananya Sharma', time: '10:18 AM', status: 'Cancelled' },
+];
+
+/* ---------------- Small building blocks ---------------- */
+
+const SummaryCard = ({ label, value, icon: Icon, dot }) => (
+  <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm p-5 flex items-center justify-between hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+    <div>
+      <p className="text-xs font-bold text-slate-400 tracking-wide uppercase mb-2">{label}</p>
+      <p className="text-3xl font-extrabold text-slate-800">{value}</p>
+    </div>
+    <div className="relative w-12 h-12 rounded-2xl bg-[#EFF6FF] flex items-center justify-center">
+      <Icon className="w-6 h-6 text-[#2563EB]" />
+      <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${dot} border-2 border-white`} />
+    </div>
+  </div>
+);
+
+const QuickAction = ({ label, icon: Icon, danger }) => (
+  <button
+    className={`flex flex-col items-center justify-center gap-3 rounded-[18px] p-5 border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+      danger
+        ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
+        : 'bg-white border-slate-100 text-slate-700 hover:border-[#2563EB]/30'
+    }`}
+  >
+    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${danger ? 'bg-red-100' : 'bg-[#EFF6FF]'}`}>
+      <Icon className={`w-5 h-5 ${danger ? 'text-red-500' : 'text-[#2563EB]'}`} />
+    </div>
+    <span className="text-xs font-bold text-center leading-tight">{label}</span>
+  </button>
+);
+
+const Field = ({ label, ...props }) => (
+  <div>
+    <label className="block text-xs font-bold text-slate-500 mb-1.5">{label}</label>
+    <input
+      {...props}
+      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] text-sm outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]/40 transition-all"
+    />
+  </div>
+);
+
+/* ---------------- Main component ---------------- */
+
+const ReceptionistDashboard = () => {
+  const [form, setForm] = useState({
+    fullName: '', phone: '', age: '', gender: '', department: '', doctor: '', symptoms: '',
+  });
+  const clearForm = () =>
+    setForm({ fullName: '', phone: '', age: '', gender: '', department: '', doctor: '', symptoms: '' });
+
+  return (
+    <ReceptionistLayout>
+
+          {/* Hero */}
+          <div className="relative overflow-hidden rounded-[18px] bg-hero-gradient text-white p-6 sm:p-8 mb-6 flex items-center justify-between">
+            <div className="relative z-10">
+              <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">Good Morning, Sarah 👋</h1>
+              <p className="text-white/80 text-sm sm:text-base max-w-md">
+                Manage patient registrations, appointments and walk-ins efficiently.
+              </p>
+            </div>
+            <div className="hidden sm:flex relative z-10 items-center justify-center w-28 h-28 rounded-full bg-white/15 backdrop-blur-sm">
+              <Users className="w-14 h-14 text-white" strokeWidth={1.5} />
+              <CalendarCheck className="w-7 h-7 text-white absolute -top-2 -left-2 bg-cyan-400 p-1.5 rounded-full" />
+              <Stethoscope className="w-7 h-7 text-white absolute -bottom-2 -right-2 bg-blue-500 p-1.5 rounded-full" />
+            </div>
+            <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/10 blur-2xl" />
+          </div>
+
+          {/* Summary cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+            {summaryCards.map((c) => <SummaryCard key={c.label} {...c} />)}
+          </div>
+
+          {/* Appointments + Walk-in Queue */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            {/* Appointments table */}
+            <div className="xl:col-span-2 bg-white rounded-[18px] border border-slate-100 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-base font-bold text-slate-800">Today's Appointments</h2>
+                <button className="text-[#2563EB] text-sm font-semibold hover:underline">View All</button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-slate-400 uppercase tracking-wide bg-[#F8FAFC]">
+                      <th className="px-5 py-3 font-bold">Time</th>
+                      <th className="px-5 py-3 font-bold">Patient Name</th>
+                      <th className="px-5 py-3 font-bold">Doctor</th>
+                      <th className="px-5 py-3 font-bold">Department</th>
+                      <th className="px-5 py-3 font-bold">Status</th>
+                      <th className="px-5 py-3 font-bold">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {appointments.map((a, i) => (
+                      <tr key={i} className="border-t border-slate-50 hover:bg-[#F8FAFC]/70 transition-colors">
+                        <td className="px-5 py-3 font-semibold text-slate-600 whitespace-nowrap">{a.time}</td>
+                        <td className="px-5 py-3 font-bold text-slate-800 whitespace-nowrap">{a.name}</td>
+                        <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{a.doctor}</td>
+                        <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{a.dept}</td>
+                        <td className="px-5 py-3">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${statusStyles[a.status]}`}>{a.status}</span>
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2 whitespace-nowrap">
+                            <button className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500" title="View"><Eye className="w-4 h-4" /></button>
+                            <button className="p-1.5 rounded-lg hover:bg-blue-50 text-[#2563EB]" title="Check-In"><LogIn className="w-4 h-4" /></button>
+                            <button className="p-1.5 rounded-lg hover:bg-cyan-50 text-cyan-600" title="Reschedule"><RefreshCcw className="w-4 h-4" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Walk-in queue */}
+            <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm p-5 flex flex-col">
+              <h2 className="text-base font-bold text-slate-800 mb-4">Walk-in Queue</h2>
+              <div className="flex flex-col gap-3">
+                {walkInQueue.map((q) => (
+                  <div
+                    key={q.no}
+                    className={`rounded-2xl p-4 border ${
+                      q.priority === 'Emergency' ? 'border-red-300 bg-red-50/50' : 'border-slate-100 bg-[#F8FAFC]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-extrabold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded-full">{q.no}</span>
+                      {q.priority === 'Emergency' && (
+                        <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">Emergency</span>
+                      )}
+                    </div>
+                    <p className="font-bold text-slate-800 text-sm">{q.name}</p>
+                    <p className="text-xs text-slate-400 mb-3">Arrived {q.arrival}</p>
+                    <div className="flex gap-2">
+                      <button className="flex-1 flex items-center justify-center gap-1 text-xs font-bold text-white bg-[#2563EB] rounded-lg py-2 hover:bg-blue-700 transition-colors">
+                        <PhoneCall className="w-3.5 h-3.5" /> Call Next
+                      </button>
+                      <button className="flex-1 flex items-center justify-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-lg py-2 hover:bg-emerald-100 transition-colors">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Complete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick actions */}
+          <div className="mb-6">
+            <h2 className="text-base font-bold text-slate-800 mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {quickActions.map((q) => <QuickAction key={q.label} {...q} />)}
+            </div>
+          </div>
+
+          {/* Registration + Doctor availability */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            {/* Registration form */}
+            <div className="xl:col-span-1 bg-white rounded-[18px] border border-slate-100 shadow-sm p-5">
+              <h2 className="text-base font-bold text-slate-800 mb-4">Patient Registration</h2>
+              <div className="flex flex-col gap-4">
+                <Field label="Full Name" placeholder="Enter patient name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+                <Field label="Phone Number" placeholder="10-digit number" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Age" placeholder="Age" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">Gender</label>
+                    <select
+                      value={form.gender}
+                      onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] text-sm outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+                    >
+                      <option value="">Select</option>
+                      <option>Male</option>
+                      <option>Female</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                </div>
+                <Field label="Department" placeholder="e.g. Cardiology" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+                <Field label="Doctor" placeholder="Assign a doctor" value={form.doctor} onChange={(e) => setForm({ ...form, doctor: e.target.value })} />
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5">Symptoms</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Briefly describe symptoms"
+                    value={form.symptoms}
+                    onChange={(e) => setForm({ ...form, symptoms: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] text-sm outline-none focus:ring-2 focus:ring-[#2563EB]/20 resize-none"
+                  />
+                </div>
+                <div className="flex gap-3 mt-1">
+                  <button className="flex-1 bg-[#2563EB] hover:bg-blue-700 text-white text-sm font-bold py-2.5 rounded-xl transition-colors">
+                    Register Patient
+                  </button>
+                  <button onClick={clearForm} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold py-2.5 rounded-xl transition-colors">
+                    Clear Form
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Doctor availability + Notifications */}
+            <div className="xl:col-span-2 flex flex-col gap-6">
+              <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm p-5">
+                <h2 className="text-base font-bold text-slate-800 mb-4">Doctor Availability</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {doctors.map((d) => (
+                    <div key={d.name} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-[#F8FAFC] p-3">
+                      <img src={d.img} alt={d.name} className="w-11 h-11 rounded-full object-cover" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-800 truncate">{d.name}</p>
+                        <p className="text-xs text-slate-400">{d.dept}</p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap ${doctorStatusStyles[d.status]}`}>
+                        {d.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-slate-800">Today's Notifications</h2>
+                  <Bell className="w-4 h-4 text-slate-400" />
+                </div>
+                <div className="flex flex-col divide-y divide-slate-50">
+                  {notifications.map((n) => (
+                    <div key={n.title} className="flex items-center gap-3 py-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0">
+                        <n.icon className="w-4 h-4 text-[#2563EB]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-800 truncate">{n.title}</p>
+                        <p className="text-xs text-slate-400 truncate">{n.desc}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-slate-400">{n.time}</span>
+                        {n.unread && <span className="w-2 h-2 rounded-full bg-[#2563EB]" />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Analytics */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm p-5">
+              <h2 className="text-base font-bold text-slate-800 mb-4">Appointments Trend</h2>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="appts" stroke="#2563EB" strokeWidth={3} dot={{ r: 3, fill: '#2563EB' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm p-5">
+              <h2 className="text-base font-bold text-slate-800 mb-4">Patient Visits</h2>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={visitsData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="visits" fill="#06B6D4" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm p-5">
+              <h2 className="text-base font-bold text-slate-800 mb-4">Department Distribution</h2>
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={deptData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={2} dataKey="value" stroke="none">
+                      {deptData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-extrabold text-slate-800">100</span>
+                  <span className="text-xs text-slate-400">Patients</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent patients */}
+          <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm overflow-hidden mb-6">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-800">Recent Patients</h2>
+              <button className="text-[#2563EB] text-sm font-semibold hover:underline">View All</button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-slate-400 uppercase tracking-wide bg-[#F8FAFC]">
+                    <th className="px-5 py-3 font-bold">Patient ID</th>
+                    <th className="px-5 py-3 font-bold">Patient Name</th>
+                    <th className="px-5 py-3 font-bold">Doctor</th>
+                    <th className="px-5 py-3 font-bold">Visit Time</th>
+                    <th className="px-5 py-3 font-bold">Status</th>
+                    <th className="px-5 py-3 font-bold">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentPatients.map((p) => (
+                    <tr key={p.id} className="border-t border-slate-50 hover:bg-[#F8FAFC]/70 transition-colors">
+                      <td className="px-5 py-3 font-semibold text-slate-500 whitespace-nowrap">{p.id}</td>
+                      <td className="px-5 py-3 font-bold text-slate-800 whitespace-nowrap">{p.name}</td>
+                      <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{p.doctor}</td>
+                      <td className="px-5 py-3 text-slate-500 whitespace-nowrap">{p.time}</td>
+                      <td className="px-5 py-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${statusStyles[p.status]}`}>{p.status}</span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <button className="text-xs font-bold text-[#2563EB] hover:underline whitespace-nowrap">View Details</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+    </ReceptionistLayout>
+  );
+};
+
+export default ReceptionistDashboard;

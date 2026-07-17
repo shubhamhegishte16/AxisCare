@@ -43,7 +43,15 @@ import Report from './PharmacistPanel/Reports.jsx';
 import Notification from './PharmacistPanel/Notifications.jsx';
 
 // Receptionist Panel
+import ReceptionistDashboard from './receptionist/ReceptionistDashboard.jsx';
 import ReceptionistAppointments from './receptionist/ReceptionistAppointments.jsx';
+import RegisterPatient from './receptionist/RegisterPatient.jsx';
+import WalkInQueue from './receptionist/WalkInQueue.jsx';
+import PatientRecords from './receptionist/PatientRecords.jsx';
+import ReceptionistBilling from './receptionist/Billing.jsx';
+import ReceptionistReports from './receptionist/Reports.jsx';
+import ReceptionistNotifications from './receptionist/ReceptionistNotifications.jsx';
+import ReceptionistSettings from './receptionist/ReceptionistSettings.jsx';
 
 function App() {
   return (
@@ -93,8 +101,16 @@ function App() {
         <Route path="/pharmacy/notifications" element={<Notification />} />
 
         {/* Receptionist Panel */}
+        <Route path="/receptionist/dashboard" element={<ReceptionistDashboard />} />
         <Route path="/receptionist/appointments" element={<ReceptionistAppointments />} />
-        <Route path="/receptionist" element={<Navigate to="/receptionist/appointments" replace />} />
+        <Route path="/receptionist/register-patient" element={<RegisterPatient />} />
+        <Route path="/receptionist/walk-in-queue" element={<WalkInQueue />} />
+        <Route path="/receptionist/patient-records" element={<PatientRecords />} />
+        <Route path="/receptionist/billing" element={<ReceptionistBilling />} />
+        <Route path="/receptionist/reports" element={<ReceptionistReports />} />
+        <Route path="/receptionist/notifications" element={<ReceptionistNotifications />} />
+        <Route path="/receptionist/settings" element={<ReceptionistSettings />} />
+        <Route path="/receptionist" element={<Navigate to="/receptionist/dashboard" replace />} />
 
         {/* Redirect /pharmacy */}
         <Route
