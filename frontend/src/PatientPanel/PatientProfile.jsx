@@ -86,13 +86,13 @@ export default function PatientProfile() {
   const fetchPatientData = async () => {
     try {
       setLoading(true);
-      console.log('Fetching patient data...');
+      // console.log('Fetching patient data...');
       const response = await patientService.getOrCreateProfile();
-      console.log('Patient data response:', response);
+      // console.log('Patient data response:', response);
       
       if (response.success) {
         const data = response.data;
-        console.log('Patient data:', data);
+        // console.log('Patient data:', data);
         
         // Calculate age
         const age = calculateAge(data.dateOfBirth);
@@ -183,7 +183,7 @@ export default function PatientProfile() {
   const handleSaveProfile = async () => {
     try {
       setSaving(true);
-      console.log('Saving profile data:', profileBuffer);
+      // console.log('Saving profile data:', profileBuffer);
       
       const updateData = {
         firstName: profileBuffer.firstName,
@@ -196,7 +196,7 @@ export default function PatientProfile() {
       };
 
       const response = await patientService.updateProfile(updateData);
-      console.log('Profile update response:', response);
+      // console.log('Profile update response:', response);
       
       if (response.success) {
         const updatedData = response.data;
@@ -236,10 +236,10 @@ export default function PatientProfile() {
   const handleSaveInsurance = async () => {
     try {
       setSaving(true);
-      console.log('Saving insurance data:', insuranceBuffer);
+      // console.log('Saving insurance data:', insuranceBuffer);
       
       const response = await patientService.updateInsurance(insuranceBuffer);
-      console.log('Insurance update response:', response);
+      // console.log('Insurance update response:', response);
       
       if (response.success) {
         setInsuranceData({ ...insuranceBuffer });

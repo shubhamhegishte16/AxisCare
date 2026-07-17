@@ -14,6 +14,7 @@ import prescriptionRoutes from "./routes/prescriptionRoutes.js";
 import patientRoutes from "./routes/patientRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import PatientNotificationRoutes from "./routes/PatientNotificationRoutes.js";
+import medicalHistoryRoutes from './routes/medicalHistoryRoutes.js';
 
 // Receptionist Panel
 import receptionistRoutes from "./routes/receptionistRoutes.js";
@@ -69,6 +70,7 @@ app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/notifications", PatientNotificationRoutes);
+app.use("/api/medical", medicalHistoryRoutes);
 
 // ================= Receptionist =================
 app.use("/api/receptionist", receptionistRoutes);
@@ -86,5 +88,5 @@ app.use("/api/pharmacy/reports", pharmacyReportsRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

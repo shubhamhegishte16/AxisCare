@@ -76,7 +76,7 @@ export const appointmentService = {
     getDoctors: async () => {
         try {
             const response = await appointmentApi.get('/appointments/doctors');
-            console.log('getDoctors response:', response.data);
+            // console.log('getDoctors response:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error in getDoctors:', error);
