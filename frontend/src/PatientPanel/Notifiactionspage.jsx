@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     SquarePlus,
     Bell,
@@ -11,65 +11,52 @@ import {
     CreditCard,
     FileText,
     CheckCircle,
-    Eye
+    Eye,
+    Loader2
 } from 'lucide-react';
 import Navbar from './Navbar.jsx';
+import { notificationService } from '../services/PatientNotificationService.js';
 
 export default function NotificationsPage() {
     const [activeTab, setActiveTab] = useState('All');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    const [notifications, setNotifications] = useState([
-        {
-            id: 1,
-            type: 'Alert',
-            title: 'Incomplete Intake Forms',
-            message: 'ALERT: You have incomplete intake forms for your upcoming visit on Oct 14.',
-            date: 'Today, 10:30 AM',
-            read: false,
-            actionLabel: 'Complete Form Now',
-            iconColor: '#D32F2F',
-            bgColor: '#FFEBEE'
-        },
-        {
-            id: 2,
-            type: 'Billing',
-            title: 'New Invoice Generated',
-            message: 'Your invoice #INV-1245 for Consultation with Dr. Rajesh Kumar is ready for payment.',
-            date: '12 July 2026',
-            read: false,
-            actionLabel: 'Pay Now',
-            iconColor: '#E65100',
-            bgColor: '#FFF3E0'
-        },
-        {
-            id: 3,
-            type: 'Appointments',
-            title: 'Appointment Scheduled Successfully',
-            message: 'Your appointment with Dr. Prathamesh P. for ENT CheckUp has been confirmed for 3:00 PM.',
-            date: '11 July 2026',
-            read: true,
-            actionLabel: 'View Details',
-            iconColor: '#2E7D32',
-            bgColor: '#E8F5E9'
-        },
-        {
-            id: 4,
-            type: 'Medical',
-            title: 'Medical History Updated',
-            message: 'Dr. Jonathon S. uploaded your laboratory diagnostic test reports.',
-            date: '10 July 2026',
-            read: true,
-            actionLabel: 'View Report',
-            iconColor: '#00A3C4',
-            bgColor: '#E0F7FA'
-        }
-    ]);
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [actionLoading, setActionLoading] = useState(null);
 
     const tabs = ['All', 'Alerts', 'Appointments', 'Billing', 'Unread'];
 
-    const markAsRead = (id) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    // Fetch notifications on mount
+    useEffect(() => {
+        fetchNotifications();
+        fetchUnreadCount();
+    }, []);
+
+    const fetchNotifications = async () => {
+        try {
+            setLoading(true);
+            const response = await notificationService.getNotifications();
+            if (response.success) {
+                setNotifications(response.data);
+                setUnreadCount(response.unreadCount || 0);
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchUnreadCount = async () => {
+        try {
+            const response = await notificationService.getUnreadCount();
+            if (response.success) {
+                setUnreadCount(response.unreadCount);
+            }
+        } catch (error) {
+            console.error('Error fetching unread count:', error);
+        }
     };
 
     const filteredNotifications = notifications.filter(item => {
@@ -81,6 +68,51 @@ export default function NotificationsPage() {
         return true;
     });
 
+    const markAsRead = async (id) => {
+        try {
+            setActionLoading(id);
+            const response = await notificationService.markAsRead(id);
+            if (response.success) {
+                setNotifications(prev => prev.map(n => 
+                    n._id === id ? { ...n, read: true } : n
+                ));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const markAllAsRead = async () => {
+        try {
+            const response = await notificationService.markAllAsRead();
+            if (response.success) {
+                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                setUnreadCount(0);
+            }
+        } catch (error) {
+            console.error('Error marking all as read:', error);
+        }
+    };
+
+    const deleteNotification = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this notification?')) return;
+        
+        try {
+            const response = await notificationService.deleteNotification(id);
+            if (response.success) {
+                setNotifications(prev => prev.filter(n => n._id !== id));
+                if (!notifications.find(n => n._id === id)?.read) {
+                    setUnreadCount(prev => Math.max(0, prev - 1));
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+        }
+    };
+
     const getIcon = (type) => {
         switch (type) {
             case 'Alert': return <AlertTriangle className="w-5 h-5 text-[#D32F2F]" />;
@@ -89,6 +121,62 @@ export default function NotificationsPage() {
             default: return <FileText className="w-5 h-5 text-[#00A3C4]" />;
         }
     };
+
+    const getIconColor = (type) => {
+        const colors = {
+            'Alert': '#D32F2F',
+            'Appointments': '#2E7D32',
+            'Billing': '#E65100',
+            'Medical': '#00A3C4',
+            'System': '#1565C0',
+            'Reminder': '#6A1B9A',
+        };
+        return colors[type] || '#00A3C4';
+    };
+
+    const getBgColor = (type) => {
+        const colors = {
+            'Alert': '#FFEBEE',
+            'Appointments': '#E8F5E9',
+            'Billing': '#FFF3E0',
+            'Medical': '#E0F7FA',
+            'System': '#E3F2FD',
+            'Reminder': '#F3E5F5',
+        };
+        return colors[type] || '#E0F7FA';
+    };
+
+    const handleActionClick = (notification) => {
+        // Handle different action types
+        switch (notification.actionLabel) {
+            case 'Complete Form Now':
+                window.location.href = '/profile';
+                break;
+            case 'Pay Now':
+                window.location.href = '/bills';
+                break;
+            case 'View Details':
+            case 'View Report':
+                window.location.href = notification.actionUrl || '/appointments';
+                break;
+            default:
+                window.location.href = notification.actionUrl || '/';
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen w-full bg-[#F0F6FA] font-sans antialiased flex flex-col">
+                <Navbar />
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                        <Loader2 className="w-12 h-12 text-[#00B4D8] animate-spin mx-auto mb-4" />
+                        <p className="text-gray-600">Loading notifications...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen w-full bg-[#F0F6FA] font-sans antialiased flex flex-col">
@@ -103,8 +191,18 @@ export default function NotificationsPage() {
                         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#0f4c81]">
                             My Notifications
                         </h1>
-                        <div className="bg-[#FF4D4D] text-white text-xs sm:text-sm font-bold px-3 py-1 rounded-full shadow-sm">
-                            {notifications.filter(n => !n.read).length} New
+                        <div className="flex items-center gap-3">
+                            {notifications.some(n => !n.read) && (
+                                <button
+                                    onClick={markAllAsRead}
+                                    className="text-xs text-[#00B4D8] hover:text-[#0096B4] font-medium hover:underline"
+                                >
+                                    Mark all as read
+                                </button>
+                            )}
+                            <div className="bg-[#FF4D4D] text-white text-xs sm:text-sm font-bold px-3 py-1 rounded-full shadow-sm">
+                                {unreadCount} New
+                            </div>
                         </div>
                     </div>
 
@@ -112,16 +210,27 @@ export default function NotificationsPage() {
                     <div className="flex items-center space-x-2 overflow-x-auto pb-3 mb-6 scrollbar-none w-full">
                         {tabs.map((tab) => {
                             const isActive = activeTab === tab;
+                            const count = tab === 'Unread' ? unreadCount : 
+                                        tab === 'All' ? notifications.length :
+                                        notifications.filter(n => n.type === tab.slice(0, -1)).length;
                             return (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-5 py-2 rounded-full font-bold text-xs sm:text-sm border whitespace-nowrap transition-all ${isActive
-                                        ? 'bg-[#00B4D8] text-white border-[#00B4D8]'
-                                        : 'bg-white text-[#00B4D8] border-gray-200 hover:bg-gray-50'
-                                        }`}
+                                    className={`px-5 py-2 rounded-full font-bold text-xs sm:text-sm border whitespace-nowrap transition-all flex items-center gap-2 ${
+                                        isActive
+                                            ? 'bg-[#00B4D8] text-white border-[#00B4D8]'
+                                            : 'bg-white text-[#00B4D8] border-gray-200 hover:bg-gray-50'
+                                    }`}
                                 >
                                     {tab}
+                                    {count > 0 && tab !== 'All' && (
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                            isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                                        }`}>
+                                            {count}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -132,9 +241,10 @@ export default function NotificationsPage() {
                         {filteredNotifications.length > 0 ? (
                             filteredNotifications.map((noti) => (
                                 <div
-                                    key={noti.id}
-                                    className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex items-start gap-4 transition-all relative overflow-hidden ${!noti.read ? 'ring-1 ring-blue-100' : 'opacity-85'
-                                        }`}
+                                    key={noti._id}
+                                    className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex items-start gap-4 transition-all relative overflow-hidden ${
+                                        !noti.read ? 'ring-1 ring-blue-100' : 'opacity-85'
+                                    }`}
                                 >
                                     {!noti.read && (
                                         <span className="absolute top-4 right-4 w-2.5 h-2.5 bg-[#0066FF] rounded-full"></span>
@@ -142,7 +252,7 @@ export default function NotificationsPage() {
 
                                     <div
                                         className="p-3 rounded-xl shrink-0"
-                                        style={{ backgroundColor: noti.bgColor }}
+                                        style={{ backgroundColor: getBgColor(noti.type) }}
                                     >
                                         {getIcon(noti.type)}
                                     </div>
@@ -153,7 +263,16 @@ export default function NotificationsPage() {
                                                 {noti.title}
                                             </h3>
                                             <span className="text-xs font-semibold text-gray-400 whitespace-nowrap">
-                                                {noti.date}
+                                                {new Date(noti.createdAt).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}
+                                                {', '}
+                                                {new Date(noti.createdAt).toLocaleTimeString('en-US', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
                                             </span>
                                         </div>
 
@@ -162,19 +281,34 @@ export default function NotificationsPage() {
                                         </p>
 
                                         <div className="flex items-center space-x-3">
-                                            <button className="bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors shadow-sm">
+                                            <button 
+                                                className="bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors shadow-sm"
+                                                onClick={() => handleActionClick(noti)}
+                                            >
                                                 {noti.actionLabel}
                                             </button>
 
                                             {!noti.read && (
                                                 <button
-                                                    onClick={() => markAsRead(noti.id)}
-                                                    className="text-gray-400 hover:text-[#0052CC] text-xs font-bold py-2 px-3 rounded-lg flex items-center space-x-1.5 hover:bg-gray-50 transition-colors"
+                                                    onClick={() => markAsRead(noti._id)}
+                                                    disabled={actionLoading === noti._id}
+                                                    className="text-gray-400 hover:text-[#0052CC] text-xs font-bold py-2 px-3 rounded-lg flex items-center space-x-1.5 hover:bg-gray-50 transition-colors disabled:opacity-50"
                                                 >
-                                                    <CheckCircle className="w-4 h-4" />
+                                                    {actionLoading === noti._id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <CheckCircle className="w-4 h-4" />
+                                                    )}
                                                     <span>Mark read</span>
                                                 </button>
                                             )}
+                                            
+                                            <button
+                                                onClick={() => deleteNotification(noti._id)}
+                                                className="text-gray-300 hover:text-red-500 text-xs p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

@@ -13,6 +13,7 @@ import prescriptionRoutes from './routes/prescriptionRoutes.js';
 //Patinet Panel
 import patientRoutes from './routes/patientRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
+import PatientNotificationRoutes from './routes/PatientNotificationRoutes.js';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use('/api/prescriptions', prescriptionRoutes);
 //patient Panel
 app.use("/api/patient", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/notifications", PatientNotificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 
