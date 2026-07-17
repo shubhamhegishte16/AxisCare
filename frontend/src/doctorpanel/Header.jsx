@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -12,7 +12,33 @@ import {
   BriefcaseMedical
 } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
+import { doctorService } from '../services/doctorService';
+
 const Header = () => {
+  const [profile, setProfile] = useState(null);
+  const [localUser, setLocalUser] = useState(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {}
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await doctorService.getProfile();
+        if (res.success) {
+          setProfile(res.data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchProfile();
+  }, []);
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/doctordashboard' },
     { name: 'Appointments', icon: Calendar, path: '/doctordashboard/appointments' },
@@ -62,11 +88,15 @@ const Header = () => {
         <div className="h-8 w-px bg-gray-200 mx-2"></div>
         <div className="flex items-center gap-3 cursor-pointer group">
           <div className="text-right hidden sm:block group-hover:opacity-80 transition-opacity">
-            <p className="text-sm font-bold text-gray-800 leading-tight">Dr. Ananya Sharma</p>
-            <p className="text-xs text-gray-500 font-medium leading-tight">Cardiologist</p>
+            <p className="text-sm font-bold text-gray-800 leading-tight">Dr. {profile?.user?.fullName || localUser?.fullName || 'Loading...'}</p>
+            <p className="text-xs text-gray-500 font-medium leading-tight">{profile?.specialization || localUser?.department || 'Specialization'}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm">
-             <img src="https://i.pravatar.cc/150?img=32" alt="Dr. Ananya" className="w-full h-full object-cover" />
+          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
+             {profile && profile.avatar ? (
+                <img src={`http://localhost:5000${profile.avatar}`} alt="Avatar" className="w-full h-full object-cover" />
+             ) : (
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.user?.fullName || localUser?.fullName || 'Dr')}&background=random`} alt="Avatar" className="w-full h-full object-cover" />
+             )}
           </div>
           <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
         </div>

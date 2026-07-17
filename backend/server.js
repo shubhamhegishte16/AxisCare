@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
+import prescriptionRoutes from './routes/prescriptionRoutes.js';
 
 //Patinet Panel
 import patientRoutes from './routes/patientRoutes.js';
@@ -42,6 +43,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/doctor", doctorRoutes);
+
+app.use('/api/prescriptions', prescriptionRoutes);
 
 //patient Panel
 app.use("/api/patient", patientRoutes);

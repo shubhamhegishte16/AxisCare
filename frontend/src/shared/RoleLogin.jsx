@@ -32,6 +32,12 @@ const RoleLogin = () => {
       });
       const data = await response.json();
       if (data.success) {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
         navigate(dashboard);
       } else {
         setErrors({ ...newErrors, emailOrPhone: data.message });
