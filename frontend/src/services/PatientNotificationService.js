@@ -1,3 +1,4 @@
+// patientNotificationService.js -
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -96,28 +97,6 @@ export const notificationService = {
         } catch (error) {
             console.error('Error in deleteNotification:', error);
             throw error.response?.data || { success: false, message: 'Failed to delete notification' };
-        }
-    },
-
-    // Delete all read notifications
-    deleteAllRead: async () => {
-        try {
-            const response = await notificationApi.delete('/notifications/delete-all-read');
-            return response.data;
-        } catch (error) {
-            console.error('Error in deleteAllRead:', error);
-            throw error.response?.data || { success: false, message: 'Failed to delete read notifications' };
-        }
-    },
-
-    // Create notification (admin/system use)
-    createNotification: async (data) => {
-        try {
-            const response = await notificationApi.post('/notifications/create', data);
-            return response.data;
-        } catch (error) {
-            console.error('Error in createNotification:', error);
-            throw error.response?.data || { success: false, message: 'Failed to create notification' };
         }
     },
 };

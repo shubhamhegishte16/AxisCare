@@ -3,6 +3,7 @@ import Appointment from '../models/Appointment.js';
 import Patient from '../models/Patient.js';
 import User from '../models/user.js';
 import DoctorProfile from '../models/doctorProfile.js';
+import { triggerNotification } from '../utils/triggerNotification.js';
 
 const generateAppointmentId = () => `#APT-${Math.floor(100000 + Math.random() * 900000)}`;
 // POST /api/appointments — patient books appointment
@@ -28,8 +29,21 @@ export const bookAppointment = async (req, res) => {
       reasonForVisit,
       symptoms: symptoms || '',
       documentPath,
+      status: 'Pending',
     });
     await appointment.save();
+
+    //TRIGGER NOTIFICATION: Appointment booked
+    await triggerNotification(
+      userId,
+      'Appointments',
+      'Appointment Request Submitted',
+      `Your appointment request with Dr. ${doctor} for ${reasonForVisit} has been submitted successfully.`,
+      'Track Status',
+      '/appointments',
+      'high'
+    );
+
     res.status(201).json({ success: true, message: 'Appointment request submitted successfully.', data: appointment });
   } catch (error) {
     console.error('Error in bookAppointment:', error);
@@ -58,6 +72,18 @@ export const cancelAppointment = async (req, res) => {
     }
     appointment.status = 'Cancelled';
     await appointment.save();
+
+    //TRIGGER NOTIFICATION: Appointment cancelled
+    await triggerNotification(
+      userId,
+      'Appointments',
+      'Appointment Cancelled',
+      `Your appointment with Dr. ${appointment.doctor} on ${appointment.preferredDate} has been cancelled.`,
+      'Reschedule',
+      '/appointments',
+      'high'
+    );
+
     res.status(200).json({ success: true, message: 'Appointment cancelled.', data: appointment });
   } catch (error) {
     console.error('Error in cancelAppointment:', error);
@@ -82,6 +108,30 @@ export const updateAppointmentStatus = async (req, res) => {
     if (!allowed.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status value.' });
     const appointment = await Appointment.findByIdAndUpdate(req.params.id, { status }, { new: true });
     if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found.' });
+
+    //TRIGGER NOTIFICATION: Appointment status changed
+    if (status === 'Scheduled') {
+      await triggerNotification(
+        appointment.userId,
+        'Appointments',
+        'Appointment Confirmed',
+        `Your appointment with Dr. ${appointment.doctor} has been confirmed for ${appointment.preferredDate} at ${appointment.preferredTime}.`,
+        'View Details',
+        '/appointments',
+        'high'
+      );
+    } else if (status === 'Completed') {
+      await triggerNotification(
+        appointment.userId,
+        'Appointments',
+        'Appointment Completed',
+        `Your appointment with Dr. ${appointment.doctor} has been marked as completed.`,
+        'View Details',
+        '/appointments',
+        'medium'
+      );
+    }
+
     res.status(200).json({ success: true, message: 'Status updated.', data: appointment });
   } catch (error) {
     console.error('Error in updateAppointmentStatus:', error);
@@ -119,6 +169,18 @@ export const cancelByDoctor = async (req, res) => {
     if (appointment.status === 'Cancelled') return res.status(400).json({ success: false, message: 'Already cancelled.' });
     appointment.status = 'Cancelled';
     await appointment.save();
+
+    // TRIGGER NOTIFICATION: Appointment cancelled by doctor
+    await triggerNotification(
+      appointment.userId,
+      'Appointments',
+      'Appointment Cancelled',
+      `Your appointment with Dr. ${appointment.doctor} on ${appointment.preferredDate} has been cancelled by the doctor.`,
+      'Reschedule',
+      '/appointments',
+      'high'
+    );
+
     res.status(200).json({ success: true, message: 'Appointment cancelled.', data: appointment });
   } catch (error) {
     console.error('Error in cancelByDoctor:', error);
@@ -132,7 +194,7 @@ export const getDoctorPatients = async (req, res) => {
     const doctorName = req.user.fullName;
     // Find all non-cancelled appointments for this doctor, sorted by most recent
     const appointments = await Appointment.find({ doctor: doctorName, status: { $ne: 'Cancelled' } }).sort({ preferredDate: -1, createdAt: -1 });
-    
+
     // Extract unique patients based on patientId
     const patientMap = new Map();
     appointments.forEach(apt => {
@@ -169,6 +231,18 @@ export const completeByDoctor = async (req, res) => {
     if (appointment.status === 'Completed') return res.status(400).json({ success: false, message: 'Already completed.' });
     appointment.status = 'Completed';
     await appointment.save();
+
+    //TRIGGER NOTIFICATION: Appointment completed
+    await triggerNotification(
+      appointment.userId,
+      'Appointments',
+      'Appointment Completed',
+      `Your appointment with Dr. ${appointment.doctor} has been completed successfully.`,
+      'View Details',
+      '/appointments',
+      'medium'
+    );
+
     res.status(200).json({ success: true, message: 'Appointment marked as completed.', data: appointment });
   } catch (error) {
     console.error('Error in completeByDoctor:', error);
@@ -180,23 +254,23 @@ export const completeByDoctor = async (req, res) => {
 export const getDoctorsByDepartment = async (req, res) => {
   try {
     console.log('Fetching doctors with profiles...');
-    
+
     // First, get all doctors from User collection
-    const doctors = await User.find({ 
-      role: 'doctor', 
-      isActive: true 
+    const doctors = await User.find({
+      role: 'doctor',
+      isActive: true
     }).select('_id fullName email phone avatar');
-    
+
     // console.log(`Found ${doctors.length} doctors in User collection`);
-    
+
     // Get their doctor profiles to fetch department and specialization
     const doctorIds = doctors.map(d => d._id);
-    const doctorProfiles = await DoctorProfile.find({ 
-      user: { $in: doctorIds } 
+    const doctorProfiles = await DoctorProfile.find({
+      user: { $in: doctorIds }
     });
-    
+
     // console.log(`Found ${doctorProfiles.length} doctor profiles`);
-    
+
     // Merge the data
     const mergedDoctors = doctors.map(doctor => {
       const profile = doctorProfiles.find(p => p.user.toString() === doctor._id.toString());
@@ -215,22 +289,22 @@ export const getDoctorsByDepartment = async (req, res) => {
         availableTime: profile?.availableTime || '',
       };
     });
-    
+
     // console.log('Merged doctors with departments:', mergedDoctors.map(d => ({
     //   name: d.fullName,
     //   department: d.department
     // })));
-    
-    res.status(200).json({ 
-      success: true, 
-      data: mergedDoctors 
+
+    res.status(200).json({
+      success: true,
+      data: mergedDoctors
     });
   } catch (error) {
     console.error('Error in getDoctorsByDepartment:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error', 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
     });
   }
 };

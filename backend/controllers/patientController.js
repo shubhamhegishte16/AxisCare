@@ -1,5 +1,7 @@
+// patientController.js -
 import Patient from '../models/Patient.js';
 import User from '../models/user.js';
+import { triggerNotification } from '../utils/triggerNotification.js';
 
 // Helper function to generate unique patient identifiers
 const generatePatientIdentifiers = () => {
@@ -13,10 +15,10 @@ const createNewPatient = async (userId, user, additionalData = {}) => {
   const nameParts = user.fullName ? user.fullName.split(' ') : ['', ''];
   const firstName = nameParts[0] || 'User';
   const lastName = nameParts.slice(1).join(' ') || '';
-  
+
   const now = new Date();
   const dateOfRegistration = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
-  
+
   const { patientPassNo, patientId } = generatePatientIdentifiers();
 
   const patientData = {
@@ -145,7 +147,18 @@ export const updatePatientProfile = async (req, res) => {
       // If no patient, create one with the update data
       const user = await User.findById(userId);
       patient = await createNewPatient(userId, user, updates);
-      
+
+      //TRIGGER NOTIFICATION: Profile created
+      await triggerNotification(
+        userId,
+        'System',
+        'Profile Created',
+        'Your patient profile has been created successfully.',
+        'View Profile',
+        '/profile',
+        'low'
+      );
+
       return res.status(201).json({
         success: true,
         message: 'Patient profile created and updated',
@@ -169,6 +182,17 @@ export const updatePatientProfile = async (req, res) => {
       if (updates.phoneNumber) userUpdate.phone = updates.phoneNumber;
       await User.findByIdAndUpdate(userId, userUpdate);
     }
+
+    //TRIGGER NOTIFICATION: Profile updated
+    await triggerNotification(
+      userId,
+      'System',
+      'Profile Updated',
+      'Your profile information has been updated successfully.',
+      'View Profile',
+      '/profile',
+      'low'
+    );
 
     res.status(200).json({
       success: true,
@@ -204,6 +228,18 @@ export const updateInsuranceInfo = async (req, res) => {
       patient.lastUpdated = Date.now();
       await patient.save();
     }
+
+    // TRIGGER NOTIFICATION: Insurance updated
+    await triggerNotification(
+      userId,
+      'System',
+      'Insurance Updated',
+      'Your insurance information has been updated successfully.',
+      'View Details',
+      '/profile',
+      'low'
+    );
+
 
     res.status(200).json({
       success: true,
@@ -250,6 +286,17 @@ export const updateEmergencyContacts = async (req, res) => {
       patient.lastUpdated = Date.now();
       await patient.save();
     }
+
+        // TRIGGER NOTIFICATION: Emergency contacts updated
+    await triggerNotification(
+      userId,
+      'System',
+      'Emergency Contacts Updated',
+      'Your emergency contacts have been updated successfully.',
+      'View Details',
+      '/profile',
+      'low'
+    );
 
     res.status(200).json({
       success: true,

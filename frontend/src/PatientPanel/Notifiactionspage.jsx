@@ -1,3 +1,4 @@
+// NotificationsPage.jsx -
 import React, { useState, useEffect } from 'react';
 import {
     SquarePlus,
@@ -27,7 +28,6 @@ export default function NotificationsPage() {
 
     const tabs = ['All', 'Alerts', 'Appointments', 'Billing', 'Unread'];
 
-    // Fetch notifications on mount
     useEffect(() => {
         fetchNotifications();
         fetchUnreadCount();
@@ -104,7 +104,8 @@ export default function NotificationsPage() {
             const response = await notificationService.deleteNotification(id);
             if (response.success) {
                 setNotifications(prev => prev.filter(n => n._id !== id));
-                if (!notifications.find(n => n._id === id)?.read) {
+                const deleted = notifications.find(n => n._id === id);
+                if (deleted && !deleted.read) {
                     setUnreadCount(prev => Math.max(0, prev - 1));
                 }
             }
@@ -118,20 +119,11 @@ export default function NotificationsPage() {
             case 'Alert': return <AlertTriangle className="w-5 h-5 text-[#D32F2F]" />;
             case 'Appointments': return <Calendar className="w-5 h-5 text-[#2E7D32]" />;
             case 'Billing': return <CreditCard className="w-5 h-5 text-[#E65100]" />;
+            case 'Medical': return <FileText className="w-5 h-5 text-[#00A3C4]" />;
+            case 'System': return <Bell className="w-5 h-5 text-[#1565C0]" />;
+            case 'Reminder': return <Bell className="w-5 h-5 text-[#6A1B9A]" />;
             default: return <FileText className="w-5 h-5 text-[#00A3C4]" />;
         }
-    };
-
-    const getIconColor = (type) => {
-        const colors = {
-            'Alert': '#D32F2F',
-            'Appointments': '#2E7D32',
-            'Billing': '#E65100',
-            'Medical': '#00A3C4',
-            'System': '#1565C0',
-            'Reminder': '#6A1B9A',
-        };
-        return colors[type] || '#00A3C4';
     };
 
     const getBgColor = (type) => {
@@ -144,24 +136,6 @@ export default function NotificationsPage() {
             'Reminder': '#F3E5F5',
         };
         return colors[type] || '#E0F7FA';
-    };
-
-    const handleActionClick = (notification) => {
-        // Handle different action types
-        switch (notification.actionLabel) {
-            case 'Complete Form Now':
-                window.location.href = '/profile';
-                break;
-            case 'Pay Now':
-                window.location.href = '/bills';
-                break;
-            case 'View Details':
-            case 'View Report':
-                window.location.href = notification.actionUrl || '/appointments';
-                break;
-            default:
-                window.location.href = notification.actionUrl || '/';
-        }
     };
 
     if (loading) {
@@ -180,11 +154,9 @@ export default function NotificationsPage() {
 
     return (
         <div className="min-h-screen w-full bg-[#F0F6FA] font-sans antialiased flex flex-col">
-
             <Navbar />
 
             <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-6 sm:py-8 flex flex-col justify-between">
-
                 <div className="flex-1">
                     {/* Section Heading & Dynamic Unread Counter Badge */}
                     <div className="flex items-center justify-between mb-6">
@@ -281,25 +253,18 @@ export default function NotificationsPage() {
                                         </p>
 
                                         <div className="flex items-center space-x-3">
-                                            <button 
-                                                className="bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors shadow-sm"
-                                                onClick={() => handleActionClick(noti)}
-                                            >
-                                                {noti.actionLabel}
-                                            </button>
-
                                             {!noti.read && (
                                                 <button
                                                     onClick={() => markAsRead(noti._id)}
                                                     disabled={actionLoading === noti._id}
-                                                    className="text-gray-400 hover:text-[#0052CC] text-xs font-bold py-2 px-3 rounded-lg flex items-center space-x-1.5 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                                    className="bg-[#00B4D8] hover:bg-[#0096B4] text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
                                                 >
                                                     {actionLoading === noti._id ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
                                                     ) : (
-                                                        <CheckCircle className="w-4 h-4" />
+                                                        <CheckCircle className="w-3 h-3" />
                                                     )}
-                                                    <span>Mark read</span>
+                                                    <span>Mark as read</span>
                                                 </button>
                                             )}
                                             
