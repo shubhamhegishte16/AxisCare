@@ -53,10 +53,20 @@ const prescriptionSchema = new mongoose.Schema({
     enum: ['Draft', 'Generated'],
     default: 'Draft',
   },
+
+  // Pharmacy fulfillment fields
+  pharmacyStatus: {
+    type: String,
+    enum: ['Pending', 'Completed', 'Cancelled'],
+    default: 'Pending',
+  },
+  dispensedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  dispensedAt: { type: Date },
 }, { timestamps: true });
 
 prescriptionSchema.index({ doctorId: 1 });
 prescriptionSchema.index({ status: 1 });
+prescriptionSchema.index({ pharmacyStatus: 1 });
 
 const Prescription = mongoose.model('Prescription', prescriptionSchema);
 export default Prescription;

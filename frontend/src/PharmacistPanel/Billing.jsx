@@ -1,48 +1,70 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Plus, Receipt, IndianRupee, Clock, CheckCircle2 } from 'lucide-react';
 import PharmacyNavbar from './PharmacyNavbar';
 import { PageHeader, StatusBadge, StatCard, Card, Modal, EmptyState } from './UI';
-import { bills as initialBills } from './mockData';
+import { pharmacyService } from '../services/pharmacyService';
 
 const emptyForm = { patient: '', amount: '' };
 
 const Billing = () => {
-  const [bills, setBills] = useState(initialBills);
+  const [bills, setBills] = useState([]);
+  const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, revenue: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
 
   const statuses = ['All', 'Paid', 'Pending'];
 
-  const filtered = bills.filter((b) => {
-    const matchesSearch = b.patient.toLowerCase().includes(search.toLowerCase()) || b.id.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || b.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [billRes, statRes] = await Promise.all([
+        pharmacyService.getBills({ search: search || undefined, status: statusFilter !== 'All' ? statusFilter : undefined }),
+        pharmacyService.getBillingStats(),
+      ]);
+      setBills(billRes.data || []);
+      setStats(statRes.data || {});
+    } catch (err) {
+      setError(err.message || 'Failed to load bills');
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter]);
 
-  const handleAdd = (e) => {
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const handleAdd = async (e) => {
     e.preventDefault();
-    const newBill = {
-      id: `BILL-${9000 + bills.length + 1}`,
-      patient: form.patient || 'Walk-in Patient',
-      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      amount: Number(form.amount) || 0,
-      status: 'Pending',
-    };
-    setBills([newBill, ...bills]);
-    setForm(emptyForm);
-    setShowAdd(false);
+    setSaving(true);
+    setError('');
+    try {
+      await pharmacyService.createBill(form);
+      setForm(emptyForm);
+      setShowAdd(false);
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to create bill');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const markPaid = (id) => setBills(bills.map((b) => (b.id === id ? { ...b, status: 'Paid' } : b)));
-
-  const stats = useMemo(() => ({
-    total: bills.length,
-    paid: bills.filter((b) => b.status === 'Paid').length,
-    pending: bills.filter((b) => b.status === 'Pending').length,
-    revenue: bills.filter((b) => b.status === 'Paid').reduce((sum, b) => sum + b.amount, 0),
-  }), [bills]);
+  const markPaid = async (id) => {
+    try {
+      await pharmacyService.markBillPaid(id);
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to mark bill as paid');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -50,7 +72,7 @@ const Billing = () => {
       <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
         <PageHeader
           title="Billing"
-          subtitle={`${bills.length} bills generated`}
+          subtitle={`${stats.total || 0} bills generated`}
           action={
             <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm">
               <Plus className="w-4 h-4" /> Create Bill
@@ -58,11 +80,13 @@ const Billing = () => {
           }
         />
 
+        {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{error}</div>}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-          <StatCard title="TOTAL BILLS" value={stats.total} icon={Receipt} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="PAID" value={stats.paid} icon={CheckCircle2} iconColor="text-green-600" bgColor="bg-green-50" />
-          <StatCard title="PENDING" value={stats.pending} icon={Clock} iconColor="text-amber-500" bgColor="bg-amber-50" />
-          <StatCard title="REVENUE COLLECTED" value={`Rs. ${stats.revenue.toLocaleString()}`} icon={IndianRupee} iconColor="text-green-600" bgColor="bg-green-50" />
+          <StatCard title="TOTAL BILLS" value={stats.total || 0} icon={Receipt} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="PAID" value={stats.paid || 0} icon={CheckCircle2} iconColor="text-green-600" bgColor="bg-green-50" />
+          <StatCard title="PENDING" value={stats.pending || 0} icon={Clock} iconColor="text-amber-500" bgColor="bg-amber-50" />
+          <StatCard title="REVENUE COLLECTED" value={`Rs. ${(stats.revenue || 0).toLocaleString()}`} icon={IndianRupee} iconColor="text-green-600" bgColor="bg-green-50" />
         </div>
 
         <Card>
@@ -98,7 +122,7 @@ const Billing = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((b) => (
+                {bills.map((b) => (
                   <tr key={b.id} className="border-b border-gray-50 hover:bg-gray-50/60">
                     <td className="py-3 font-semibold text-gray-800">{b.id}</td>
                     <td className="py-3 text-gray-700">{b.patient}</td>
@@ -107,14 +131,15 @@ const Billing = () => {
                     <td className="py-3"><StatusBadge status={b.status} /></td>
                     <td className="py-3 text-right">
                       {b.status === 'Pending' && (
-                        <button onClick={() => markPaid(b.id)} className="text-xs font-semibold text-blue-600 hover:underline">Mark as Paid</button>
+                        <button onClick={() => markPaid(b._id)} className="text-xs font-semibold text-blue-600 hover:underline">Mark as Paid</button>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && <EmptyState text="No bills match your search." />}
+            {!loading && bills.length === 0 && <EmptyState text="No bills match your search." />}
+            {loading && <div className="py-10 text-center text-sm text-gray-400">Loading...</div>}
           </div>
         </Card>
       </main>
@@ -140,7 +165,9 @@ const Billing = () => {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">Generate Bill</button>
+            <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">
+              {saving ? 'Generating...' : 'Generate Bill'}
+            </button>
           </div>
         </form>
       </Modal>

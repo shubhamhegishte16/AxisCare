@@ -15,6 +15,16 @@ import patientRoutes from './routes/patientRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import PatientNotificationRoutes from './routes/PatientNotificationRoutes.js';
 
+//Pharmacy Panel
+import pharmacyDashboardRoutes from './routes/pharmacy/dashboardRoutes.js';
+import pharmacyMedicineRoutes from './routes/pharmacy/medicineRoutes.js';
+import pharmacySupplierRoutes from './routes/pharmacy/supplierRoutes.js';
+import pharmacyOrderRoutes from './routes/pharmacy/orderRoutes.js';
+import pharmacyBillingRoutes from './routes/pharmacy/billingRoutes.js';
+import pharmacyPrescriptionRoutes from './routes/pharmacy/prescriptionRoutes.js';
+import pharmacyNotificationRoutes from './routes/pharmacy/notificationRoutes.js';
+import pharmacyReportsRoutes from './routes/pharmacy/reportsRoutes.js';
+
 dotenv.config();
 
 connectDB();
@@ -51,6 +61,16 @@ app.use('/api/prescriptions', prescriptionRoutes);
 app.use("/api/patient", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/notifications", PatientNotificationRoutes);
+
+//Pharmacy Panel
+app.use("/api/pharmacy/dashboard", pharmacyDashboardRoutes);
+app.use("/api/pharmacy/medicines", pharmacyMedicineRoutes);
+app.use("/api/pharmacy/suppliers", pharmacySupplierRoutes);
+app.use("/api/pharmacy/orders", pharmacyOrderRoutes);
+app.use("/api/pharmacy/billing", pharmacyBillingRoutes);
+app.use("/api/pharmacy/prescriptions", pharmacyPrescriptionRoutes);
+app.use("/api/pharmacy/notifications", pharmacyNotificationRoutes);
+app.use("/api/pharmacy/reports", pharmacyReportsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

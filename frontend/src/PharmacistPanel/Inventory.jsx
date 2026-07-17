@@ -1,49 +1,66 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Search, Boxes, AlertTriangle, XCircle, TrendingUp, PlusCircle, MinusCircle } from 'lucide-react';
 import PharmacyNavbar from './PharmacyNavbar';
 import { PageHeader, StatusBadge, StatCard, Card, Modal, EmptyState } from './UI';
-import { medicinesList as initialMedicines } from './mockData';
+import { pharmacyService } from '../services/pharmacyService';
 
-const deriveStatus = (stock) => {
-  if (stock === 0) return 'Out of Stock';
-  if (stock < 100) return 'Low Stock';
-  return 'In Stock';
-};
+const formatDate = (d) => (d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
 
 const Inventory = () => {
-  const [medicines, setMedicines] = useState(initialMedicines);
+  const [medicines, setMedicines] = useState([]);
+  const [stats, setStats] = useState({ totalStock: 0, lowStock: 0, outOfStock: 0, value: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [adjustItem, setAdjustItem] = useState(null);
   const [adjustAmount, setAdjustAmount] = useState('');
+  const [adjusting, setAdjusting] = useState(false);
 
   const statuses = ['All', 'In Stock', 'Low Stock', 'Out of Stock', 'Expiring Soon'];
 
-  const filtered = medicines.filter((m) => {
-    const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.id.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || m.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [medRes, statRes] = await Promise.all([
+        pharmacyService.getMedicines({ search: search || undefined }),
+        pharmacyService.getInventoryStats(),
+      ]);
+      setMedicines(medRes.data || []);
+      setStats(statRes.data || {});
+    } catch (err) {
+      setError(err.message || 'Failed to load inventory');
+    } finally {
+      setLoading(false);
+    }
+  }, [search]);
 
-  const applyAdjustment = (type) => {
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const filtered = useMemo(
+    () => medicines.filter((m) => statusFilter === 'All' || m.status === statusFilter),
+    [medicines, statusFilter]
+  );
+
+  const applyAdjustment = async (type) => {
     const amt = Number(adjustAmount) || 0;
     if (!adjustItem || amt <= 0) return;
-    setMedicines(medicines.map((m) => {
-      if (m.id !== adjustItem.id) return m;
-      const newStock = type === 'add' ? m.stock + amt : Math.max(0, m.stock - amt);
-      const status = m.status === 'Expiring Soon' ? m.status : deriveStatus(newStock);
-      return { ...m, stock: newStock, status };
-    }));
-    setAdjustAmount('');
-    setAdjustItem(null);
+    setAdjusting(true);
+    try {
+      await pharmacyService.adjustStock(adjustItem._id, type, amt);
+      setAdjustAmount('');
+      setAdjustItem(null);
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to adjust stock');
+    } finally {
+      setAdjusting(false);
+    }
   };
-
-  const stats = useMemo(() => ({
-    totalStock: medicines.reduce((sum, m) => sum + m.stock, 0),
-    lowStock: medicines.filter((m) => m.status === 'Low Stock').length,
-    outOfStock: medicines.filter((m) => m.status === 'Out of Stock').length,
-    value: medicines.reduce((sum, m) => sum + m.stock * m.price, 0),
-  }), [medicines]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -51,11 +68,13 @@ const Inventory = () => {
       <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
         <PageHeader title="Inventory" subtitle="Track and adjust stock levels across your catalog" />
 
+        {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{error}</div>}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-          <StatCard title="TOTAL UNITS" value={stats.totalStock.toLocaleString()} icon={Boxes} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="LOW STOCK" value={stats.lowStock} icon={AlertTriangle} iconColor="text-amber-500" bgColor="bg-amber-50" />
-          <StatCard title="OUT OF STOCK" value={stats.outOfStock} icon={XCircle} iconColor="text-red-500" bgColor="bg-red-50" />
-          <StatCard title="INVENTORY VALUE" value={`Rs. ${stats.value.toLocaleString()}`} icon={TrendingUp} iconColor="text-green-600" bgColor="bg-green-50" />
+          <StatCard title="TOTAL UNITS" value={(stats.totalStock || 0).toLocaleString()} icon={Boxes} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="LOW STOCK" value={stats.lowStock || 0} icon={AlertTriangle} iconColor="text-amber-500" bgColor="bg-amber-50" />
+          <StatCard title="OUT OF STOCK" value={stats.outOfStock || 0} icon={XCircle} iconColor="text-red-500" bgColor="bg-red-50" />
+          <StatCard title="INVENTORY VALUE" value={`Rs. ${(stats.value || 0).toLocaleString()}`} icon={TrendingUp} iconColor="text-green-600" bgColor="bg-green-50" />
         </div>
 
         <Card>
@@ -65,7 +84,7 @@ const Inventory = () => {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by medicine name or ID..."
+                placeholder="Search by medicine name or batch..."
                 className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-200"
               />
             </div>
@@ -100,7 +119,7 @@ const Inventory = () => {
                     </td>
                     <td className="py-3 text-gray-500">{m.category}</td>
                     <td className="py-3 text-gray-500">{m.batch}</td>
-                    <td className="py-3 text-gray-500">{m.expiry}</td>
+                    <td className="py-3 text-gray-500">{formatDate(m.expiry)}</td>
                     <td className="py-3 text-gray-700 font-semibold">{m.stock}</td>
                     <td className="py-3"><StatusBadge status={m.status} /></td>
                     <td className="py-3 text-right">
@@ -115,7 +134,8 @@ const Inventory = () => {
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && <EmptyState text="No inventory items match your search." />}
+            {!loading && filtered.length === 0 && <EmptyState text="No inventory items match your search." />}
+            {loading && <div className="py-10 text-center text-sm text-gray-400">Loading...</div>}
           </div>
         </Card>
       </main>
@@ -140,14 +160,16 @@ const Inventory = () => {
             </div>
             <div className="flex gap-3">
               <button
+                disabled={adjusting}
                 onClick={() => applyAdjustment('remove')}
-                className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold px-4 py-2.5 rounded-lg"
+                className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60 text-sm font-semibold px-4 py-2.5 rounded-lg"
               >
                 <MinusCircle className="w-4 h-4" /> Remove Stock
               </button>
               <button
+                disabled={adjusting}
                 onClick={() => applyAdjustment('add')}
-                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm"
               >
                 <PlusCircle className="w-4 h-4" /> Add Stock
               </button>

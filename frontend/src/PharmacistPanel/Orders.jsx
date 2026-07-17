@@ -1,49 +1,75 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Plus, Truck, Clock, CheckCircle2, XCircle, Eye } from 'lucide-react';
 import PharmacyNavbar from './PharmacyNavbar';
 import { PageHeader, StatusBadge, StatCard, Card, Modal, EmptyState } from './UI';
-import { purchaseOrders as initialOrders, suppliers } from './mockData';
+import { pharmacyService } from '../services/pharmacyService';
 
 const emptyForm = { supplier: '', amount: '' };
 
 const Orders = () => {
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, delivered: 0, totalValue: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [viewItem, setViewItem] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const statuses = ['All', 'Pending', 'Delivered', 'Cancelled'];
 
-  const filtered = orders.filter((o) => {
-    const matchesSearch = o.supplier.toLowerCase().includes(search.toLowerCase()) || o.id.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || o.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [orderRes, statRes, supRes] = await Promise.all([
+        pharmacyService.getOrders({ search: search || undefined, status: statusFilter !== 'All' ? statusFilter : undefined }),
+        pharmacyService.getOrderStats(),
+        pharmacyService.getSuppliers(),
+      ]);
+      setOrders(orderRes.data || []);
+      setStats(statRes.data || {});
+      setSuppliers(supRes.data || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter]);
 
-  const handleAdd = (e) => {
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const handleAdd = async (e) => {
     e.preventDefault();
-    const newOrder = {
-      id: `PO-${3000 + orders.length + 1}`,
-      supplier: form.supplier || 'Unnamed Supplier',
-      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      amount: Number(form.amount) || 0,
-      status: 'Pending',
-    };
-    setOrders([newOrder, ...orders]);
-    setForm(emptyForm);
-    setShowAdd(false);
+    setSaving(true);
+    setError('');
+    try {
+      await pharmacyService.createOrder(form);
+      setForm(emptyForm);
+      setShowAdd(false);
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to place order');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const updateStatus = (id, status) => setOrders(orders.map((o) => (o.id === id ? { ...o, status } : o)));
-
-  const stats = useMemo(() => ({
-    total: orders.length,
-    pending: orders.filter((o) => o.status === 'Pending').length,
-    delivered: orders.filter((o) => o.status === 'Delivered').length,
-    totalValue: orders.reduce((sum, o) => sum + o.amount, 0),
-  }), [orders]);
+  const updateStatus = async (id, status) => {
+    try {
+      await pharmacyService.updateOrderStatus(id, status);
+      setViewItem((v) => (v && v._id === id ? { ...v, status } : v));
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to update order status');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -51,7 +77,7 @@ const Orders = () => {
       <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
         <PageHeader
           title="Purchase Orders"
-          subtitle={`${orders.length} orders placed`}
+          subtitle={`${stats.total || 0} orders placed`}
           action={
             <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm">
               <Plus className="w-4 h-4" /> New Order
@@ -59,11 +85,13 @@ const Orders = () => {
           }
         />
 
+        {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{error}</div>}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-          <StatCard title="TOTAL ORDERS" value={stats.total} icon={Truck} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="PENDING" value={stats.pending} icon={Clock} iconColor="text-amber-500" bgColor="bg-amber-50" />
-          <StatCard title="DELIVERED" value={stats.delivered} icon={CheckCircle2} iconColor="text-green-600" bgColor="bg-green-50" />
-          <StatCard title="TOTAL VALUE" value={`Rs. ${stats.totalValue.toLocaleString()}`} icon={Truck} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="TOTAL ORDERS" value={stats.total || 0} icon={Truck} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="PENDING" value={stats.pending || 0} icon={Clock} iconColor="text-amber-500" bgColor="bg-amber-50" />
+          <StatCard title="DELIVERED" value={stats.delivered || 0} icon={CheckCircle2} iconColor="text-green-600" bgColor="bg-green-50" />
+          <StatCard title="TOTAL VALUE" value={`Rs. ${(stats.totalValue || 0).toLocaleString()}`} icon={Truck} iconColor="text-blue-600" bgColor="bg-blue-50" />
         </div>
 
         <Card>
@@ -99,7 +127,7 @@ const Orders = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((o) => (
+                {orders.map((o) => (
                   <tr key={o.id} className="border-b border-gray-50 hover:bg-gray-50/60">
                     <td className="py-3 font-semibold text-gray-800">{o.id}</td>
                     <td className="py-3 text-gray-700">{o.supplier}</td>
@@ -111,8 +139,8 @@ const Orders = () => {
                         <button onClick={() => setViewItem(o)} className="text-gray-400 hover:text-blue-600"><Eye className="w-4 h-4" /></button>
                         {o.status === 'Pending' && (
                           <>
-                            <button onClick={() => updateStatus(o.id, 'Delivered')} className="text-gray-400 hover:text-green-600"><CheckCircle2 className="w-4 h-4" /></button>
-                            <button onClick={() => updateStatus(o.id, 'Cancelled')} className="text-gray-400 hover:text-red-600"><XCircle className="w-4 h-4" /></button>
+                            <button onClick={() => updateStatus(o._id, 'Delivered')} className="text-gray-400 hover:text-green-600"><CheckCircle2 className="w-4 h-4" /></button>
+                            <button onClick={() => updateStatus(o._id, 'Cancelled')} className="text-gray-400 hover:text-red-600"><XCircle className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>
@@ -121,7 +149,8 @@ const Orders = () => {
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && <EmptyState text="No purchase orders match your search." />}
+            {!loading && orders.length === 0 && <EmptyState text="No purchase orders match your search." />}
+            {loading && <div className="py-10 text-center text-sm text-gray-400">Loading...</div>}
           </div>
         </Card>
       </main>
@@ -150,7 +179,9 @@ const Orders = () => {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">Place Order</button>
+            <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">
+              {saving ? 'Placing...' : 'Place Order'}
+            </button>
           </div>
         </form>
       </Modal>

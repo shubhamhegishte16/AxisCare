@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Bell, PackagePlus, AlertTriangle, Truck, CalendarClock, Receipt, CheckCheck } from 'lucide-react';
 import PharmacyNavbar from './PharmacyNavbar';
 import { PageHeader, Card, EmptyState } from './UI';
-import { notifications as initialNotifications } from './mockData';
+import { pharmacyService } from '../services/pharmacyService';
 
 const typeIcon = {
   'New Prescription': PackagePlus,
@@ -21,11 +21,46 @@ const typeColor = {
 };
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState(initialNotifications);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const markAllRead = () => setNotifications(notifications.map((n) => ({ ...n, read: true })));
-  const markRead = (id) => setNotifications(notifications.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await pharmacyService.getNotifications();
+      setNotifications(res.data || []);
+      setUnreadCount(res.unreadCount || 0);
+    } catch (err) {
+      setError(err.message || 'Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const markAllRead = async () => {
+    try {
+      await pharmacyService.markAllNotificationsRead();
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to mark all as read');
+    }
+  };
+
+  const markRead = async (id) => {
+    try {
+      await pharmacyService.markNotificationRead(id);
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to mark notification as read');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -42,6 +77,8 @@ const Notifications = () => {
             )
           }
         />
+
+        {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{error}</div>}
 
         <Card>
           <div className="flex flex-col divide-y divide-gray-50">
@@ -68,7 +105,8 @@ const Notifications = () => {
               );
             })}
           </div>
-          {notifications.length === 0 && <EmptyState text="No notifications yet." />}
+          {!loading && notifications.length === 0 && <EmptyState text="No notifications yet." />}
+          {loading && <div className="py-10 text-center text-sm text-gray-400">Loading...</div>}
         </Card>
       </main>
     </div>

@@ -1,45 +1,67 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Plus, Building2, Mail, Phone, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 import PharmacyNavbar from './PharmacyNavbar';
 import { PageHeader, StatusBadge, StatCard, Card, Modal, EmptyState } from './UI';
-import { suppliers as initialSuppliers } from './mockData';
+import { pharmacyService } from '../services/pharmacyService';
 
 const emptyForm = { name: '', contact: '', email: '' };
 
 const Suppliers = () => {
-  const [suppliers, setSuppliers] = useState(initialSuppliers);
+  const [suppliers, setSuppliers] = useState([]);
+  const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, medicines: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
 
-  const filtered = suppliers.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()) || s.id.toLowerCase().includes(search.toLowerCase())
-  );
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [supRes, statRes] = await Promise.all([
+        pharmacyService.getSuppliers({ search: search || undefined }),
+        pharmacyService.getSupplierStats(),
+      ]);
+      setSuppliers(supRes.data || []);
+      setStats(statRes.data || {});
+    } catch (err) {
+      setError(err.message || 'Failed to load suppliers');
+    } finally {
+      setLoading(false);
+    }
+  }, [search]);
 
-  const handleAdd = (e) => {
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const handleAdd = async (e) => {
     e.preventDefault();
-    const newSupplier = {
-      id: `SUP-${String(suppliers.length + 1).padStart(2, '0')}`,
-      name: form.name || 'Unnamed Supplier',
-      contact: form.contact || '—',
-      email: form.email || '—',
-      medicines: 0,
-      orders: 0,
-      status: 'Pending',
-    };
-    setSuppliers([newSupplier, ...suppliers]);
-    setForm(emptyForm);
-    setShowAdd(false);
+    setSaving(true);
+    setError('');
+    try {
+      await pharmacyService.createSupplier(form);
+      setForm(emptyForm);
+      setShowAdd(false);
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to add supplier');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = (id) => setSuppliers(suppliers.filter((s) => s.id !== id));
-
-  const stats = useMemo(() => ({
-    total: suppliers.length,
-    active: suppliers.filter((s) => s.status === 'Active').length,
-    pending: suppliers.filter((s) => s.status === 'Pending').length,
-    medicines: suppliers.reduce((sum, s) => sum + s.medicines, 0),
-  }), [suppliers]);
+  const handleDelete = async (id) => {
+    try {
+      await pharmacyService.deleteSupplier(id);
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to delete supplier');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -47,7 +69,7 @@ const Suppliers = () => {
       <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
         <PageHeader
           title="Suppliers"
-          subtitle={`${suppliers.length} registered suppliers`}
+          subtitle={`${stats.total || 0} registered suppliers`}
           action={
             <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm">
               <Plus className="w-4 h-4" /> Add Supplier
@@ -55,11 +77,13 @@ const Suppliers = () => {
           }
         />
 
+        {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{error}</div>}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-          <StatCard title="TOTAL SUPPLIERS" value={stats.total} icon={Building2} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="ACTIVE" value={stats.active} icon={CheckCircle2} iconColor="text-green-600" bgColor="bg-green-50" />
-          <StatCard title="PENDING" value={stats.pending} icon={Clock} iconColor="text-amber-500" bgColor="bg-amber-50" />
-          <StatCard title="MEDICINES SUPPLIED" value={stats.medicines} icon={Building2} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="TOTAL SUPPLIERS" value={stats.total || 0} icon={Building2} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="ACTIVE" value={stats.active || 0} icon={CheckCircle2} iconColor="text-green-600" bgColor="bg-green-50" />
+          <StatCard title="PENDING" value={stats.pending || 0} icon={Clock} iconColor="text-amber-500" bgColor="bg-amber-50" />
+          <StatCard title="MEDICINES SUPPLIED" value={stats.medicines || 0} icon={Building2} iconColor="text-blue-600" bgColor="bg-blue-50" />
         </div>
 
         <Card>
@@ -68,13 +92,13 @@ const Suppliers = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by supplier name or ID..."
+              placeholder="Search by supplier name..."
               className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-200"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((s) => (
+            {suppliers.map((s) => (
               <div key={s.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -90,12 +114,13 @@ const Suppliers = () => {
                 <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-50 pt-3">
                   <span>{s.medicines} medicines</span>
                   <span>{s.orders} orders</span>
-                  <button onClick={() => handleDelete(s.id)} className="text-gray-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(s._id)} className="text-gray-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             ))}
           </div>
-          {filtered.length === 0 && <EmptyState text="No suppliers match your search." />}
+          {!loading && suppliers.length === 0 && <EmptyState text="No suppliers match your search." />}
+          {loading && <div className="py-10 text-center text-sm text-gray-400">Loading...</div>}
         </Card>
       </main>
 
@@ -128,7 +153,9 @@ const Suppliers = () => {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">Save Supplier</button>
+            <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">
+              {saving ? 'Saving...' : 'Save Supplier'}
+            </button>
           </div>
         </form>
       </Modal>

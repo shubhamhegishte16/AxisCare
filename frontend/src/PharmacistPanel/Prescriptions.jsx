@@ -1,49 +1,65 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Search, Eye, CheckCircle2, XCircle, ClipboardList, Clock, CheckCheck, Ban } from 'lucide-react';
 import PharmacyNavbar from './PharmacyNavbar';
 import { PageHeader, StatusBadge, StatCard, Card, Modal, EmptyState } from './UI';
-import { todaysPrescriptionRequests as initialRequests, prescriptionMedicines } from './mockData';
+import { pharmacyService } from '../services/pharmacyService';
 
 const Prescriptions = () => {
-  const [requests, setRequests] = useState(initialRequests);
+  const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, completed: 0, cancelled: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [viewItem, setViewItem] = useState(null);
 
   const statuses = ['All', 'Pending', 'Completed', 'Cancelled'];
 
-  const filtered = requests.filter((r) => {
-    const matchesSearch =
-      r.patient.toLowerCase().includes(search.toLowerCase()) ||
-      r.id.toLowerCase().includes(search.toLowerCase()) ||
-      r.doctor.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [rxRes, statRes] = await Promise.all([
+        pharmacyService.getPrescriptions({ search: search || undefined, status: statusFilter !== 'All' ? statusFilter : undefined }),
+        pharmacyService.getPrescriptionStats(),
+      ]);
+      setRequests(rxRes.data || []);
+      setStats(statRes.data || {});
+    } catch (err) {
+      setError(err.message || 'Failed to load prescriptions');
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter]);
 
-  const updateStatus = (id, status) => {
-    setRequests(requests.map((r) => (r.id === id ? { ...r, status } : r)));
-    setViewItem((v) => (v && v.id === id ? { ...v, status } : v));
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const updateStatus = async (id, status) => {
+    try {
+      await pharmacyService.updatePrescriptionStatus(id, status);
+      setViewItem((v) => (v && v._id === id ? { ...v, status } : v));
+      await loadData();
+    } catch (err) {
+      setError(err.message || 'Failed to update prescription status');
+    }
   };
-
-  const stats = useMemo(() => ({
-    total: requests.length,
-    pending: requests.filter((r) => r.status === 'Pending').length,
-    completed: requests.filter((r) => r.status === 'Completed').length,
-    cancelled: requests.filter((r) => r.status === 'Cancelled').length,
-  }), [requests]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <PharmacyNavbar />
       <main className="flex-1 p-6 lg:p-8 max-w-7xl mx-auto w-full">
-        <PageHeader title="Prescriptions" subtitle={`${requests.length} prescription requests`} />
+        <PageHeader title="Prescriptions" subtitle={`${stats.total || 0} prescription requests`} />
+
+        {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">{error}</div>}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-          <StatCard title="TOTAL REQUESTS" value={stats.total} icon={ClipboardList} iconColor="text-blue-600" bgColor="bg-blue-50" />
-          <StatCard title="PENDING" value={stats.pending} icon={Clock} iconColor="text-amber-500" bgColor="bg-amber-50" />
-          <StatCard title="COMPLETED" value={stats.completed} icon={CheckCheck} iconColor="text-green-600" bgColor="bg-green-50" />
-          <StatCard title="CANCELLED" value={stats.cancelled} icon={Ban} iconColor="text-red-500" bgColor="bg-red-50" />
+          <StatCard title="TOTAL REQUESTS" value={stats.total || 0} icon={ClipboardList} iconColor="text-blue-600" bgColor="bg-blue-50" />
+          <StatCard title="PENDING" value={stats.pending || 0} icon={Clock} iconColor="text-amber-500" bgColor="bg-amber-50" />
+          <StatCard title="COMPLETED" value={stats.completed || 0} icon={CheckCheck} iconColor="text-green-600" bgColor="bg-green-50" />
+          <StatCard title="CANCELLED" value={stats.cancelled || 0} icon={Ban} iconColor="text-red-500" bgColor="bg-red-50" />
         </div>
 
         <Card>
@@ -79,7 +95,7 @@ const Prescriptions = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
+                {requests.map((r) => (
                   <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/60">
                     <td className="py-3 font-semibold text-gray-800">{r.id}</td>
                     <td className="py-3 text-gray-700">{r.patient}</td>
@@ -91,8 +107,8 @@ const Prescriptions = () => {
                         <button onClick={() => setViewItem(r)} className="text-gray-400 hover:text-blue-600"><Eye className="w-4 h-4" /></button>
                         {r.status === 'Pending' && (
                           <>
-                            <button onClick={() => updateStatus(r.id, 'Completed')} className="text-gray-400 hover:text-green-600"><CheckCircle2 className="w-4 h-4" /></button>
-                            <button onClick={() => updateStatus(r.id, 'Cancelled')} className="text-gray-400 hover:text-red-600"><XCircle className="w-4 h-4" /></button>
+                            <button onClick={() => updateStatus(r._id, 'Completed')} className="text-gray-400 hover:text-green-600"><CheckCircle2 className="w-4 h-4" /></button>
+                            <button onClick={() => updateStatus(r._id, 'Cancelled')} className="text-gray-400 hover:text-red-600"><XCircle className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>
@@ -101,7 +117,8 @@ const Prescriptions = () => {
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && <EmptyState text="No prescriptions match your search." />}
+            {!loading && requests.length === 0 && <EmptyState text="No prescriptions match your search." />}
+            {loading && <div className="py-10 text-center text-sm text-gray-400">Loading...</div>}
           </div>
         </Card>
       </main>
@@ -130,24 +147,22 @@ const Prescriptions = () => {
 
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Prescribed Medicines</p>
-              {prescriptionMedicines[viewItem.id] ? (
+              {viewItem.medicines && viewItem.medicines.length > 0 ? (
                 <div className="border border-gray-100 rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr className="text-left text-gray-400 text-xs uppercase">
                         <th className="py-2 px-3 font-semibold">Medicine</th>
                         <th className="py-2 px-3 font-semibold">Dosage</th>
-                        <th className="py-2 px-3 font-semibold">Qty</th>
                         <th className="py-2 px-3 font-semibold">Frequency</th>
                         <th className="py-2 px-3 font-semibold">Duration</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {prescriptionMedicines[viewItem.id].map((m, idx) => (
+                      {viewItem.medicines.map((m, idx) => (
                         <tr key={idx} className="border-t border-gray-50">
                           <td className="py-2 px-3 font-medium text-gray-800">{m.name}</td>
                           <td className="py-2 px-3 text-gray-500">{m.dosage}</td>
-                          <td className="py-2 px-3 text-gray-500">{m.qty}</td>
                           <td className="py-2 px-3 text-gray-500">{m.frequency}</td>
                           <td className="py-2 px-3 text-gray-500">{m.duration}</td>
                         </tr>
@@ -162,8 +177,8 @@ const Prescriptions = () => {
 
             {viewItem.status === 'Pending' && (
               <div className="flex justify-end gap-3 pt-2">
-                <button onClick={() => updateStatus(viewItem.id, 'Cancelled')} className="px-4 py-2.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50">Cancel Request</button>
-                <button onClick={() => updateStatus(viewItem.id, 'Completed')} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">
+                <button onClick={() => updateStatus(viewItem._id, 'Cancelled')} className="px-4 py-2.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50">Cancel Request</button>
+                <button onClick={() => updateStatus(viewItem._id, 'Completed')} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">
                   <CheckCircle2 className="w-4 h-4" /> Mark as Dispensed
                 </button>
               </div>
