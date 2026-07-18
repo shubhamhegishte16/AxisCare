@@ -6,6 +6,26 @@ import LabAppointment from "../models/LabAppointment.js";
 import bcrypt from "bcryptjs";
 import { triggerDoctorNotification } from "../utils/triggerDoctorNotification.js";
 
+export const getDoctorLabReports = async (req, res) => {
+  try {
+    const doctorId = req.user._id;
+    const user = await User.findById(doctorId);
+    
+    const labReports = await LabAppointment.find({
+      $or: [
+        { referringDoctorId: doctorId },
+        { referringDoctor: { $regex: user.fullName, $options: 'i' } },
+        { referringDoctor: { $regex: user.fullName.split(' ').pop(), $options: 'i' } }
+      ]
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: labReports });
+  } catch (error) {
+    console.error('Error fetching lab reports:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 export const getMyPatients = async (req, res) => {
   try {
     const doctorId = req.user._id;

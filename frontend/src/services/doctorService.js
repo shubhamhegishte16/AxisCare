@@ -60,10 +60,20 @@ export const doctorService = {
       const response = await doctorApi.get('/reports');
       return response.data;
     } catch (error) {
-      console.error('Error fetching reports:', error);
+      console.error('Error getting reports:', error);
       throw error.response?.data || { success: false, message: 'Failed to fetch reports' };
     }
   },
+  getLabReports: async () => {
+    try {
+      const response = await doctorApi.get('/lab-reports');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting lab reports:', error);
+      throw error.response?.data || { success: false, message: 'Failed to fetch lab reports' };
+    }
+  },
+
   getReportById: async (id) => {
     try {
       const response = await doctorApi.get(`/reports/${id}`);

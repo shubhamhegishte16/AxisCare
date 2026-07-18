@@ -83,12 +83,16 @@ const DetailModal = ({ request, onClose }) => {
 
         <div className="flex items-center justify-between text-xs text-gray-400 font-semibold border-t border-gray-50 pt-4">
           <span>{request.date} at {request.time}</span>
-          <button 
-            onClick={() => navigate(`/lab/requests/${request.dbId}/process`)}
-            className="bg-[#00B9D6] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#00a8c3] transition-colors"
-          >
-            Start Processing
-          </button>
+          {request.status !== 'Completed' ? (
+            <button 
+              onClick={() => navigate(`/lab/requests/${request.dbId}/process`)}
+              className="bg-[#00B9D6] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#00a8c3] transition-colors"
+            >
+              Start Processing
+            </button>
+          ) : (
+            <span className="bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold">✓ Completed</span>
+          )}
         </div>
       </div>
     </div>
@@ -96,6 +100,7 @@ const DetailModal = ({ request, onClose }) => {
 };
 
 const LabRequests = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('All Requests');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('Requested Time (Newest)');
@@ -330,7 +335,11 @@ const LabRequests = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="p-2 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors">
+                        <button 
+                          onClick={() => navigate(`/lab/requests/${req.dbId}/process`)}
+                          className="p-2 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors"
+                          title="Process Request"
+                        >
                           <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>

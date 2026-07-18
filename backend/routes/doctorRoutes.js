@@ -7,6 +7,7 @@ import {
   changePassword,
   getDashboardData,
   getMyPatients,
+  getDoctorLabReports,
 } from "../controllers/doctorController.js";
 import { getMyNotifications, markAsRead, markAllAsRead, deleteNotification } from '../controllers/DoctorNotificationController.js';
 import { createReport, getReports, getReportById, updateReportStatus, updateReport, deleteReport } from '../controllers/reportController.js';
@@ -42,5 +43,8 @@ router.get("/reports/:id", getReportById);
 router.put("/reports/:id/status", updateReportStatus);
 router.put("/reports/:id", updateReport);
 router.delete("/reports/:id", deleteReport);
+
+// Lab Reports
+router.get("/lab-reports", getDoctorLabReports);
 
 export default router;

@@ -10,6 +10,7 @@ import { medicalService } from '../services/medicalHistoryService.js';
 import { pharmacyService } from '../services/pharmacyService.js';
 import PurchaseMedicinesModal from './PurchaseMedicalModal.jsx';
 import BookLabAppointment from './BookLabAppointment.jsx';
+import LabReportView from '../shared/LabReportView';
 
 const VitalsIcon = ({ type }) => {
     switch (type) {
@@ -116,6 +117,10 @@ export default function PatientMedical() {
 
     const [isLabAppointmentModalOpen, setIsLabAppointmentModalOpen] = useState(false);
     const [selectedPrescriptionForLab, setSelectedPrescriptionForLab] = useState(null);
+
+    // Lab report view
+    const [selectedLabTest, setSelectedLabTest] = useState(null);
+    const [isLabReportOpen, setIsLabReportOpen] = useState(false);
 
     const tabs = ['All Visits', 'Consultation', 'Lab Tests', 'Medications'];
 
@@ -572,7 +577,8 @@ export default function PatientMedical() {
 
     // Handle view lab test
     const handleViewLabTest = (test) => {
-        alert(`Lab Test: ${test.testName}\nCategory: ${test.category}\nStatus: ${test.status}\nRequested By: ${test.requestedBy}\nDate: ${test.date}`);
+        setSelectedLabTest(test);
+        setIsLabReportOpen(true);
     };
 
     return (
@@ -1186,6 +1192,29 @@ export default function PatientMedical() {
                     fetchAllData();
                 }}
             />
+
+            {/* Lab Report View Modal */}
+            {isLabReportOpen && selectedLabTest && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+                    <div className="bg-gray-50 rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden max-h-[92vh]">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Lab Report</h3>
+                                <p className="text-xs text-gray-400 mt-0.5">{selectedLabTest.testName} &bull; {selectedLabTest.date}</p>
+                            </div>
+                            <button
+                                onClick={() => { setIsLabReportOpen(false); setSelectedLabTest(null); }}
+                                className="text-gray-400 hover:text-gray-600 bg-white border border-gray-200 rounded-full p-1 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto">
+                            <LabReportView row={selectedLabTest} />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

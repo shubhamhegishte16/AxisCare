@@ -3,7 +3,7 @@ import Appointment from '../models/Appointment.js';
 import Patient from '../models/Patient.js';
 import Bill from '../models/PharmacyPanel/Bill.js';
 import User from '../models/user.js';
-
+import LabAppointment from '../models/LabAppointment.js';
 // Get patient's medical dashboard with vitals
 export const getMedicalDashboard = async (req, res) => {
   try {
@@ -398,48 +398,31 @@ export const getLabTests = async (req, res) => {
       });
     }
 
-    const user = await User.findById(userId);
-
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const prescriptions = await Prescription.find({ 
-      $or: [
-        { patientName: patient.fullName },
-        { patientName: user?.fullName }
-      ],
-      'labAppointments.0': { $exists: true }
-    })
+    // Fetch LabAppointments where patientId matches the user
+    const labAppointments = await LabAppointment.find({ patientId: userId })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Prescription.countDocuments({ 
-      $or: [
-        { patientName: patient.fullName },
-        { patientName: user?.fullName }
-      ],
-      'labAppointments.0': { $exists: true }
-    });
+    const total = await LabAppointment.countDocuments({ patientId: userId });
 
     const labTests = [];
-    prescriptions.forEach(p => {
-      p.labAppointments.forEach((lab, index) => {
+    labAppointments.forEach(la => {
+      (la.labTests || []).forEach((test, index) => {
         labTests.push({
-          _id: lab._id || `${p._id}-${index}`,
-          patientId: p.prescriptionId || `#MH-${String(p._id).slice(-4)}`,
-          testName: lab.testName || 'N/A',
-          category: lab.category || 'General',
-          requestedBy: p.doctorName || 'N/A',
-          status: lab.status || 'Pending',
-          date: lab.scheduledDate ? new Date(lab.scheduledDate).toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric'
-          }) : p.consultationDate || 'N/A',
-          prescriptionId: p._id,
-          labAppointmentId: lab._id,
-          results: lab.results || '',
-          reportUrl: lab.reportUrl || '',
+          _id: test._id || `${la._id}-${index}`,
+          patientId: `#MH-${String(la._id).slice(-4).toUpperCase()}`,
+          testName: test.testName || 'N/A',
+          category: test.category || 'General',
+          requestedBy: la.referringDoctor || 'N/A',
+          status: test.status || 'Pending',
+          date: la.appointmentDate ? `${la.appointmentDate} ${la.appointmentTime || ''}` : new Date(la.createdAt).toLocaleDateString(),
+          prescriptionId: la.prescriptionId || null,
+          labAppointmentId: la._id,
+          results: test.results || '',
+          reportUrl: test.reportUrl || '',
         });
       });
     });

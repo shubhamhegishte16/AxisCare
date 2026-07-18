@@ -44,7 +44,7 @@ const Header = () => {
     { name: 'Appointments', icon: Calendar, path: '/doctordashboard/appointments' },
     { name: 'Patients', icon: Users, path: '/doctordashboard/patients' },
     { name: 'Prescriptions', icon: FileText, path: '/doctordashboard/prescriptions' },
-    { name: 'Lab Requests', icon: FlaskConical, path: '/doctordashboard/lab-requests' },
+    { name: 'Lab Reports', icon: FlaskConical, path: '/doctordashboard/lab-reports' },
     { name: 'Reports', icon: BarChart2, path: '/doctordashboard/reports' },
   ];
   return (

@@ -13,6 +13,7 @@ import DoctorSettings from './doctorpanel/DoctorSettings';
 import Reports from './doctorpanel/Reports';
 import CreateReport from './doctorpanel/CreateReport';
 import Notifications from './doctorpanel/Notifications';
+import LabReports from './doctorpanel/LabReports';
 
 // Shared
 import RoleSelect from './RoleSelect';
@@ -95,6 +96,7 @@ function App() {
         <Route path="/doctordashboard/create-report" element={<CreateReport />} />
         <Route path="/doctordashboard/edit-report/:id" element={<CreateReport />} />
         <Route path="/doctordashboard/notifications" element={<Notifications />} />
+        <Route path="/doctordashboard/lab-reports" element={<LabReports />} />
 
         {/* Patient Panel */}
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
