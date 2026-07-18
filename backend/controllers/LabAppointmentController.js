@@ -7,7 +7,7 @@ import User from '../models/user.js';
 export const bookLabAppointment = async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     // Get patient details
     const patient = await Patient.findOne({ userId });
     if (!patient) {

@@ -1,30 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search, Filter, Download, Eye, ChevronRight,
   ChevronLeft, ChevronsLeft, ChevronsRight, ChevronDown,
-  FileText, Clock, CheckCircle, AlertTriangle, ClipboardList, X
+  FileText, Clock, CheckCircle, AlertTriangle, ClipboardList, X, Loader2
 } from 'lucide-react';
 import LabHeader from './LabHeader';
-
-const REQUESTS = [
-  { id: 'LR-2026-0142', patient: 'Rajesh Kumar', pid: 'P-10024', age: 45, gender: 'M', doctor: 'Dr. Ananya Sharma', specialization: 'Cardiologist', tests: ['Complete Blood Count (CBC)', 'Lipid Profile', 'Liver Function Test'], priority: 'URGENT', date: '14 July 2026', time: '09:15 AM', status: 'Pending' },
-  { id: 'LR-2026-0141', patient: 'Priya Mehta', pid: 'P-10025', age: 32, gender: 'F', doctor: 'Dr. Ananya Sharma', specialization: 'Cardiologist', tests: ['Lipid Profile'], priority: 'HIGH', date: '14 July 2026', time: '09:05 AM', status: 'Pending' },
-  { id: 'LR-2026-0140', patient: 'Amit Verma', pid: 'P-10026', age: 38, gender: 'M', doctor: 'Dr. Rohan Patel', specialization: 'General Physician', tests: ['Liver Function Test (LFT)'], priority: 'NORMAL', date: '14 July 2026', time: '08:55 AM', status: 'In Progress' },
-  { id: 'LR-2026-0139', patient: 'Neha Patil', pid: 'P-10027', age: 29, gender: 'F', doctor: 'Dr. Rohan Patel', specialization: 'General Physician', tests: ['Thyroid Profile (T3, T4, TSH)'], priority: 'HIGH', date: '14 July 2026', time: '08:30 AM', status: 'Pending' },
-  { id: 'LR-2026-0138', patient: 'Suresh Chandra', pid: 'P-10028', age: 60, gender: 'M', doctor: 'Dr. Meera Joshi', specialization: 'Nephrologist', tests: ['Urine Routine & Microscopy'], priority: 'NORMAL', date: '14 July 2026', time: '08:20 AM', status: 'In Progress' },
-  { id: 'LR-2026-0137', patient: 'Sneha Kapoor', pid: 'P-10029', age: 27, gender: 'F', doctor: 'Dr. Ananya Sharma', specialization: 'Cardiologist', tests: ['D-Dimer Test'], priority: 'URGENT', date: '14 July 2026', time: '08:10 AM', status: 'Pending' },
-  { id: 'LR-2026-0136', patient: 'Vikas Sharma', pid: 'P-10030', age: 55, gender: 'M', doctor: 'Dr. Meera Joshi', specialization: 'Nephrologist', tests: ['Creatinine', 'BUN'], priority: 'HIGH', date: '14 July 2026', time: '08:00 AM', status: 'Completed' },
-  { id: 'LR-2026-0135', patient: 'Kavita Singh', pid: 'P-10031', age: 44, gender: 'F', doctor: 'Dr. Rohan Patel', specialization: 'General Physician', tests: ['Complete Blood Count (CBC)'], priority: 'NORMAL', date: '14 July 2026', time: '07:50 AM', status: 'Cancelled' },
-];
+import { labService } from '../services/labService';
 
 const TABS = ['All Requests', 'Pending', 'In Progress', 'Completed', 'Cancelled'];
 
-const STATS = [
-  { label: 'Total Requests', value: 74, sub: 'This Month', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { label: 'Pending Requests', value: 32, sub: 'Awaiting Processing', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
-  { label: 'In Progress', value: 18, sub: 'Tests in Progress', icon: ClipboardList, color: 'text-purple-500', bg: 'bg-purple-50' },
-  { label: 'Completed Today', value: 28, sub: 'Completed', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  { label: 'Urgent Requests', value: 6, sub: 'Requires Attention', icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50' },
+const STATS_CONFIG = [
+  { key: 'total', label: 'Total Requests', sub: 'This Month', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' },
+  { key: 'pending', label: 'Pending Requests', sub: 'Awaiting Processing', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
+  { key: 'inProgress', label: 'In Progress', sub: 'Tests in Progress', icon: ClipboardList, color: 'text-purple-500', bg: 'bg-purple-50' },
+  { key: 'completedToday', label: 'Completed Today', sub: 'Completed', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+  { key: 'urgent', label: 'Urgent Requests', sub: 'Requires Attention', icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50' },
 ];
 
 const getPriorityBadge = (priority) => {
@@ -46,6 +37,7 @@ const getStatusBadge = (status) => {
 };
 
 const DetailModal = ({ request, onClose }) => {
+  const navigate = useNavigate();
   if (!request) return null;
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -91,7 +83,10 @@ const DetailModal = ({ request, onClose }) => {
 
         <div className="flex items-center justify-between text-xs text-gray-400 font-semibold border-t border-gray-50 pt-4">
           <span>{request.date} at {request.time}</span>
-          <button className="bg-[#00B9D6] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#00a8c3] transition-colors">
+          <button 
+            onClick={() => navigate(`/lab/requests/${request.dbId}/process`)}
+            className="bg-[#00B9D6] text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-[#00a8c3] transition-colors"
+          >
             Start Processing
           </button>
         </div>
@@ -108,15 +103,71 @@ const LabRequests = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
+  
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completedToday: 0,
+    urgent: 0
+  });
 
-  const filtered = REQUESTS.filter(r => {
-    const tabMatch = activeTab === 'All Requests' || r.status === activeTab;
+  const fetchStats = async () => {
+    try {
+      const res = await labService.getStats();
+      if (res.success) {
+        setStats(res.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats', error);
+    }
+  };
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const res = await labService.getRequests(activeTab === 'All Requests' ? '' : activeTab);
+      if (res.success) {
+        // Map database object to UI format
+        const mapped = res.data.map(req => ({
+          id: req._id.substring(req._id.length - 6).toUpperCase(), // Short ID
+          dbId: req._id,
+          patient: req.patientName || 'Unknown',
+          pid: req.patientId ? req.patientId.substring(req.patientId.length - 6).toUpperCase() : 'N/A',
+          age: req.patientAge || 'N/A',
+          gender: req.patientGender === 'Male' ? 'M' : req.patientGender === 'Female' ? 'F' : 'O',
+          doctor: req.referringDoctor || 'Self Requested',
+          specialization: 'Doctor',
+          tests: req.labTests ? req.labTests.map(t => t.testName) : [],
+          priority: 'NORMAL',
+          date: new Date(req.appointmentDate || req.createdAt).toLocaleDateString(),
+          time: req.appointmentTime || new Date(req.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          status: req.status || 'Pending'
+        }));
+        setRequests(mapped);
+      }
+    } catch (error) {
+      console.error('Failed to fetch requests', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    fetchRequests();
+  }, [activeTab]);
+
+  const filtered = requests.filter(r => {
     const searchLower = search.toLowerCase();
     const searchMatch = !search ||
       r.patient.toLowerCase().includes(searchLower) ||
       r.id.toLowerCase().includes(searchLower) ||
-      r.tests.some(t => t.toLowerCase().includes(searchLower));
-    return tabMatch && searchMatch;
+      (r.tests && r.tests.some(t => t.toLowerCase().includes(searchLower)));
+    return searchMatch;
   });
 
   const totalPages = Math.ceil(filtered.length / rowsPerPage);
@@ -145,19 +196,13 @@ const LabRequests = () => {
                 className="pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-[#00B9D6]/30 focus:border-[#00B9D6] w-72 transition-all"
               />
             </div>
-            <button
-              onClick={() => setShowFilter(!showFilter)}
-              className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition-colors"
-            >
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
+            
           </div>
         </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-7">
-          {STATS.map((stat, i) => (
+          {STATS_CONFIG.map((stat, i) => (
             <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
               <div className="flex items-center gap-2 mb-3">
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${stat.bg}`}>
@@ -165,7 +210,7 @@ const LabRequests = () => {
                 </div>
               </div>
               <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400">{stat.label}</p>
-              <p className="text-3xl font-extrabold text-gray-900 mt-1">{stat.value}</p>
+              <p className="text-3xl font-extrabold text-gray-900 mt-1">{stats[stat.key]}</p>
               <p className="text-[10px] text-gray-400 font-semibold mt-1">{stat.sub}</p>
             </div>
           ))}
@@ -225,8 +270,17 @@ const LabRequests = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {paginated.map((req) => (
-                  <tr key={req.id} className="hover:bg-blue-50/20 transition-colors group">
+                {loading ? (
+                  <tr>
+                    <td colSpan="8" className="py-16 text-center text-gray-400 font-semibold">
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-8 h-8 animate-spin text-[#00B9D6]" />
+                        <p>Loading requests...</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : paginated.map((req) => (
+                  <tr key={req.dbId} className="hover:bg-blue-50/20 transition-colors group">
                     <td className="py-4 px-6">
                       <span className="text-sm font-bold text-[#00B9D6] cursor-pointer hover:underline">{req.id}</span>
                     </td>
@@ -246,8 +300,8 @@ const LabRequests = () => {
                       <p className="text-[11px] text-gray-400 font-semibold">{req.specialization}</p>
                     </td>
                     <td className="py-4 px-6">
-                      <p className="text-sm font-semibold text-gray-700">{req.tests[0]}</p>
-                      {req.tests.length > 1 && (
+                      <p className="text-sm font-semibold text-gray-700">{req.tests && req.tests.length > 0 ? req.tests[0] : 'None'}</p>
+                      {req.tests && req.tests.length > 1 && (
                         <p className="text-[11px] text-[#00B9D6] font-bold cursor-pointer hover:underline">
                           + {req.tests.length - 1} more test{req.tests.length > 2 ? 's' : ''}
                         </p>
@@ -283,7 +337,7 @@ const LabRequests = () => {
                     </td>
                   </tr>
                 ))}
-                {paginated.length === 0 && (
+                {!loading && paginated.length === 0 && (
                   <tr>
                     <td colSpan="8" className="py-16 text-center text-gray-400 font-semibold">
                       No requests found.

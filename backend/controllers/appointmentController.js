@@ -4,6 +4,7 @@ import Patient from '../models/Patient.js';
 import User from '../models/user.js';
 import DoctorProfile from '../models/doctorProfile.js';
 import { triggerNotification } from '../utils/triggerNotification.js';
+import { triggerDoctorNotification } from '../utils/triggerDoctorNotification.js';
 
 const generateAppointmentId = () => `#APT-${Math.floor(100000 + Math.random() * 900000)}`;
 // POST /api/appointments — patient books appointment
@@ -33,16 +34,45 @@ export const bookAppointment = async (req, res) => {
     });
     await appointment.save();
 
-    //TRIGGER NOTIFICATION: Appointment booked
     await triggerNotification(
       userId,
       'Appointments',
       'Appointment Request Submitted',
       `Your appointment request with Dr. ${doctor} for ${reasonForVisit} has been submitted successfully.`,
       'Track Status',
-      '/appointments',
+      '/patient-appointments',
       'high'
     );
+
+    if (doctorProfileId) {
+      const docProfile = await DoctorProfile.findById(doctorProfileId);
+      if (docProfile) {
+        await triggerDoctorNotification(
+          docProfile.user,
+          'Appointments',
+          'New Appointment Request',
+          `You have a new appointment request from ${fullName} for ${reasonForVisit}.`,
+          'View Details',
+          '/doctordashboard/appointments',
+          'high'
+        );
+      }
+    } else {
+      // Try to find the doctor by name if profile ID isn't provided
+      const doctorNameMatch = doctor.replace('Dr. ', '').trim();
+      const docUsers = await User.find({ role: 'doctor', fullName: new RegExp(doctorNameMatch, 'i') });
+      if (docUsers.length > 0) {
+         await triggerDoctorNotification(
+          docUsers[0]._id,
+          'Appointments',
+          'New Appointment Request',
+          `You have a new appointment request from ${fullName} for ${reasonForVisit}.`,
+          'View Details',
+          '/doctordashboard/appointments',
+          'high'
+        );
+      }
+    }
 
     res.status(201).json({ success: true, message: 'Appointment request submitted successfully.', data: appointment });
   } catch (error) {
