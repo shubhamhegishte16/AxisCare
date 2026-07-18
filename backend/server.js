@@ -17,6 +17,7 @@ import PatientNotificationRoutes from "./routes/PatientNotificationRoutes.js";
 import medicalHistoryRoutes from './routes/medicalHistoryRoutes.js';
 import LabAppointmentRoutes from './routes/LabAppointmentRoutes.js';
 import orderRoutes from './routes/pharmacy/orderRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 import billRoutes from './routes/PatientBillRoutes.js';
 
@@ -80,7 +81,7 @@ app.use("/api/notifications", PatientNotificationRoutes);
 app.use("/api/medical", medicalHistoryRoutes);
 app.use('/api/lab-appointments', LabAppointmentRoutes);
 app.use('/api/bills', billRoutes);
-
+app.use('/api/dashboard', dashboardRoutes);
 
 // ================= Receptionist =================
 app.use("/api/receptionist", receptionistRoutes);
