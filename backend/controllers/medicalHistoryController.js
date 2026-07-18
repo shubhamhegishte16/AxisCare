@@ -512,7 +512,7 @@ export const getLabTestDetails = async (req, res) => {
   }
 };
 
-// Get medications with bill status
+// Get medications with bill status - UPDATED
 export const getMedications = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -554,19 +554,19 @@ export const getMedications = async (req, res) => {
     const medications = [];
     prescriptions.forEach(p => {
       p.medicines.forEach((med, index) => {
-        const bill = bills.find(b => 
-          b.prescription && b.prescription.toString() === p._id.toString()
-        );
+        // Check if this medicine was purchased
+        const isPurchased = med.status === 'Purchased' || med.status === 'Completed';
         
-        let isPurchased = false;
+        // Find bill for this medication
         let billId = null;
-        if (bill) {
-          const billItem = bill.items.find(item => 
-            item.name.toLowerCase() === med.name.toLowerCase()
+        let billStatus = null;
+        if (isPurchased) {
+          const bill = bills.find(b => 
+            b.prescription && b.prescription.toString() === p._id.toString()
           );
-          if (billItem) {
-            isPurchased = bill.status === 'Paid';
+          if (bill) {
             billId = bill._id;
+            billStatus = bill.status;
           }
         }
 
@@ -579,8 +579,8 @@ export const getMedications = async (req, res) => {
           duration: med.duration || 'N/A',
           status: isPurchased ? 'Purchased' : 'Not Purchased',
           billId: billId,
-          billStatus: bill?.status || 'No Bill',
-          purchaseDate: bill?.createdAt || p.dispensedAt || null,
+          billStatus: billStatus || 'No Bill',
+          purchaseDate: med.purchaseDate || null,
           prescriptionId: p._id,
           prescriptionNumber: p.prescriptionId,
           doctorName: p.doctorName,

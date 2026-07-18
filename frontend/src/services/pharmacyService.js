@@ -28,15 +28,25 @@ const handle = async (promise, fallbackMessage) => {
 };
 
 export const pharmacyService = {
-  // ============================================
   // PATIENT ORDER ROUTES
-  // ============================================
+  checkMedicineAvailability: async (medicines) => {
+    try {
+      // console.log('Checking medicine availability:', medicines);
+      const response = await pharmacyApi.post('/pharmacy/patient/check-availability', { medicines });
+      // console.log('Availability check response:', response.data);
+      return response.data;
+    } catch (error) {
+      // console.error('Error in checkMedicineAvailability:', error);
+      throw error.response?.data || { success: false, message: 'Failed to check availability' };
+    }
+  },
+
+  // Create order from prescription
   createOrderFromPrescription: async (data) => {
     try {
-      console.log('Creating order from prescription:', data);
-      
+      // console.log('Creating order from prescription:', data);
       const response = await pharmacyApi.post('/pharmacy/patient/create', data);
-      console.log('Order created:', response.data);
+      // console.log('Order created:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error in createOrderFromPrescription:', error);
@@ -44,6 +54,7 @@ export const pharmacyService = {
     }
   },
 
+  // Get patient orders
   getPatientOrders: async () => {
     try {
       const response = await pharmacyApi.get('/pharmacy/patient/orders');
@@ -54,6 +65,7 @@ export const pharmacyService = {
     }
   },
 
+  // Pharmacy module
   // Dashboard
   getDashboard: () => handle(pharmacyApi.get('/dashboard'), 'Failed to fetch dashboard data'),
 

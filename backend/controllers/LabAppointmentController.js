@@ -53,17 +53,17 @@ export const bookLabAppointment = async (req, res) => {
       });
     }
 
-    // ✅ Don't validate prescription - just use it if provided
+    // Don't validate prescription - just use it if provided
     let prescriptionData = null;
     if (prescriptionId) {
       try {
         prescriptionData = await Prescription.findById(prescriptionId);
         // If prescription exists, use its data
         if (prescriptionData) {
-          console.log('✅ Prescription found:', prescriptionData.prescriptionId);
+          // console.log('Prescription found:', prescriptionData.prescriptionId);
         }
       } catch (err) {
-        console.log('⚠️ Prescription not found, continuing without it');
+        // console.log('Prescription not found, continuing without it');
         // Continue without prescription
       }
     }

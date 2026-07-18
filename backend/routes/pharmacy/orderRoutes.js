@@ -7,14 +7,16 @@ import {
   createOrder,
   updateOrderStatus,
   createOrderFromPrescription,
-  getPatientOrders
+  getPatientOrders,
+  checkMedicineAvailability
 } from "../../controllers/pharmacy/orderController.js";
 
 const router = express.Router();
 
 router.use(protect);
 
-// Routes accessible by patients (for creating orders)
+// Routes accessible by patients (for creating orders) for patient panel
+router.post("/patient/check-availability", checkMedicineAvailability);
 router.post("/patient/create", createOrderFromPrescription);
 router.get("/patient/orders", getPatientOrders);
 

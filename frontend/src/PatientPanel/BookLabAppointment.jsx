@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, Clock, MapPin, Stethoscope, User, Phone, Mail, AlertCircle, Plus, Minus } from 'lucide-react';
+import { X, Loader2, Calendar, Clock, MapPin, Stethoscope, User, Phone, Mail, AlertCircle, Plus, Minus, CheckCircle } from 'lucide-react';
 import { labAppointmentService } from '../services/labAppointmentService';
 
 export default function BookLabAppointment({ isOpen, onClose, prescription, onSuccess }) {
@@ -23,14 +23,17 @@ export default function BookLabAppointment({ isOpen, onClose, prescription, onSu
   });
   const [labTests, setLabTests] = useState([]);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
+      setSuccess(false);
+      setBookingDetails(null);
+      setError(null);
       loadPatientData();
       
-      // If coming from prescription, pre-fill lab tests
       if (prescription) {
-        // Handle different lab test formats
         let tests = [];
         if (prescription.labTests) {
           if (Array.isArray(prescription.labTests)) {
@@ -47,6 +50,11 @@ export default function BookLabAppointment({ isOpen, onClose, prescription, onSu
             }));
           }
         }
+        
+        if (tests.length === 0) {
+          tests = [{ testName: '', category: 'Other', instructions: '' }];
+        }
+        
         setLabTests(tests);
         setFormData(prev => ({
           ...prev,
@@ -105,13 +113,11 @@ export default function BookLabAppointment({ isOpen, onClose, prescription, onSu
     e.preventDefault();
     setError(null);
 
-    // Validate required fields
     if (!formData.labName || !formData.labAddress || !formData.appointmentDate || !formData.appointmentTime) {
       setError('Please fill in all required fields.');
       return;
     }
 
-    // Validate tests
     const invalidTests = labTests.filter(t => !t.testName || t.testName.trim() === '');
     if (invalidTests.length > 0) {
       setError('Please fill in all test names.');
@@ -133,8 +139,14 @@ export default function BookLabAppointment({ isOpen, onClose, prescription, onSu
       });
 
       if (response.success) {
-        if (onSuccess) onSuccess(response.data);
-        onClose();
+        setSuccess(true);
+        setBookingDetails(response.data);
+        
+        // Auto close after 3 seconds
+        setTimeout(() => {
+          if (onSuccess) onSuccess(response.data);
+          onClose();
+        }, 3000);
       } else {
         setError(response.message || 'Failed to book appointment');
       }
@@ -147,6 +159,38 @@ export default function BookLabAppointment({ isOpen, onClose, prescription, onSu
   };
 
   if (!isOpen) return null;
+
+  // Show success view
+  if (success && bookingDetails) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl max-w-md w-full shadow-xl p-8 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-10 h-10 text-green-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">Appointment Booked!</h3>
+          <p className="text-gray-600 mb-4">
+            Your lab appointment has been booked successfully.
+          </p>
+          <div className="bg-gray-50 rounded-lg p-4 text-left space-y-2 text-sm">
+            <p><strong>Lab:</strong> {bookingDetails.labName}</p>
+            <p><strong>Date:</strong> {bookingDetails.appointmentDate}</p>
+            <p><strong>Time:</strong> {bookingDetails.appointmentTime}</p>
+            <p><strong>Tests:</strong> {bookingDetails.labTests?.map(t => t.testName).join(', ')}</p>
+          </div>
+          <button
+            onClick={() => {
+              if (onSuccess) onSuccess(bookingDetails);
+              onClose();
+            }}
+            className="mt-6 px-6 py-2 bg-[#00b4d8] hover:bg-[#0092b3] text-white rounded-lg font-medium transition"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -182,6 +226,7 @@ export default function BookLabAppointment({ isOpen, onClose, prescription, onSu
               Personal Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ... keep all existing form fields ... */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                 <input

@@ -124,17 +124,26 @@ export default function PatientMedical() {
         fetchAllData();
     }, []);
 
-    // Handle purchase medicines - Updated to open modal instead of redirect
     const handlePurchaseMedicines = (prescription) => {
         setSelectedPrescriptionForPurchase(prescription);
         setIsPurchaseModalOpen(true);
     };
 
+    // Switch to medications tab
+    const switchToMedicationsTab = () => {
+        setActiveTab('Medications');
+    };
+
     // Handle purchase complete
-    const handlePurchaseComplete = (order) => {
+    const handlePurchaseComplete = async (order) => {
         console.log('Purchase complete:', order);
-        // Refresh medications data
-        fetchAllData();
+        await fetchAllData();
+        setActiveTab('Medications');
+    };
+
+    const handleBookLabAppointment = (prescription) => {
+        setSelectedPrescriptionForLab(prescription);
+        setIsLabAppointmentModalOpen(true);
     };
 
     const fetchAllData = async () => {
@@ -191,7 +200,19 @@ export default function PatientMedical() {
 
             const medicationsRes = await medicalService.getMedications();
             if (medicationsRes.success) {
-                setMedicationsData(medicationsRes.data || []);
+                // Ensure medications have all required fields
+                const formattedMedications = medicationsRes.data.map(med => ({
+                    ...med,
+                    // Ensure these fields exist for filtering
+                    medicine: med.medicine || med.medicineName || med.name || 'N/A',
+                    status: med.status || 'Not Purchased',
+                    patientId: med.patientId || 'N/A',
+                    dosage: med.dosage || 'N/A',
+                    frequency: med.frequency || 'N/A',
+                    duration: med.duration || 'N/A',
+                    billId: med.billId || null,
+                }));
+                setMedicationsData(formattedMedications);
             }
 
         } catch (error) {
@@ -286,9 +307,12 @@ export default function PatientMedical() {
                     (row.requestedBy?.toLowerCase() || '').includes(searchQuery)
                 );
             case 'Medications':
+                // Filter medications by search query
                 return medicationsData.filter(row =>
                     (row.medicine?.toLowerCase() || '').includes(searchQuery) ||
-                    (row.status?.toLowerCase() || '').includes(searchQuery)
+                    (row.status?.toLowerCase() || '').includes(searchQuery) ||
+                    (row.patientId?.toLowerCase() || '').includes(searchQuery) ||
+                    (row.dosage?.toLowerCase() || '').includes(searchQuery)
                 );
             default:
                 return [];
@@ -484,12 +508,6 @@ export default function PatientMedical() {
         printWindow.document.close();
     };
 
-    // Handle lab appointment booking - Opens modal instead of redirect
-    const handleBookLabAppointment = (prescription) => {
-        setSelectedPrescriptionForLab(prescription);
-        setIsLabAppointmentModalOpen(true);
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen bg-[#F0F5FA] font-sans antialiased">
@@ -647,7 +665,7 @@ export default function PatientMedical() {
                             <div className="flex space-x-2 sm:space-x-3 whitespace-nowrap">
                                 {tabs.map((tab) => {
                                     const isActive = activeTab === tab;
-                                    const count = tab === 'All Visits' ? visitsData.length :
+                                    const count = tab === 'All Visits' ? consultationsData.length :
                                         tab === 'Consultation' ? consultationsData.length :
                                             tab === 'Lab Tests' ? labTestsData.length :
                                                 medicationsData.length;
@@ -1151,6 +1169,7 @@ export default function PatientMedical() {
                 }}
                 prescription={selectedPrescriptionForPurchase}
                 onPurchaseComplete={handlePurchaseComplete}
+                onSwitchToMedications={switchToMedicationsTab} 
             />
 
             {/* Book Lab Appointment Modal */}
