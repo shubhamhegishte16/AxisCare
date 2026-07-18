@@ -117,6 +117,10 @@ orderSchema.pre('save', async function (next) {
 orderSchema.index({ userId: 1 });
 orderSchema.index({ prescriptionId: 1 });
 orderSchema.index({ status: 1 });
+<<<<<<< HEAD
+=======
+orderSchema.index({ orderId: 1 });
+>>>>>>> d9195c598e222a22f0a9e962f1e9b84df0a477a9
 
 const Order = mongoose.model("Order", orderSchema);
 export default Order;

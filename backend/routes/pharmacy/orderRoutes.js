@@ -18,6 +18,8 @@ router.use(protect);
 
 // Routes accessible by patients (for creating orders) for patient panel
 router.post("/patient/check-availability", checkMedicineAvailability);
+// Routes accessible by patients (for creating orders) for patient panel
+router.post("/patient/check-availability", checkMedicineAvailability);
 router.post("/patient/create", createOrderFromPrescription);
 router.get("/patient/orders", getPatientOrders);
 
