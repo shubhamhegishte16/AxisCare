@@ -4,6 +4,8 @@ import {
   getBillStats,
   getBillDetails,
   payBill,
+  downloadBill,
+  createBillFromOrder,
 } from '../controllers/PatientBillController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -12,16 +14,12 @@ const router = express.Router();
 // All routes require authentication
 router.use(protect);
 
-// Get bill stats
-router.get('/patient/stats', getBillStats);
+router.get('/patient/stats', getBillStats);           
+router.get('/patient', getPatientBills);              
+router.post('/create-from-order', createBillFromOrder);
 
-// Get patient bills
-router.get('/patient', getPatientBills);
-
-// Get bill details
-router.get('/:id', getBillDetails);
-
-// Pay bill
-router.put('/:id/pay', payBill);
+router.get('/:id', getBillDetails);                   
+router.put('/:id/pay', payBill);                      
+router.get('/:id/download', downloadBill);
 
 export default router;

@@ -46,7 +46,7 @@ const createNewPatient = async (userId, user, additionalData = {}) => {
 
   const patient = new Patient(patientData);
   await patient.save();
-  console.log('New patient profile created for user');
+  // console.log('New patient profile created for user');
   return patient;
 };
 
@@ -83,7 +83,7 @@ export const getOrCreatePatientProfile = async (req, res) => {
       }
       if (needsUpdate) {
         await patient.save();
-        console.log('Updated patient profile for user:', userId);
+        // console.log('Updated patient profile for user:', userId);
       }
     }
 
@@ -132,7 +132,7 @@ export const updatePatientProfile = async (req, res) => {
     const userId = req.user._id;
     const updates = req.body;
 
-    console.log('Updating patient profile for user');
+    // console.log('Updating patient profile for user');
 
     // Remove fields that shouldn't be updated directly
     delete updates.userId;
@@ -215,7 +215,7 @@ export const updateInsuranceInfo = async (req, res) => {
     const userId = req.user._id;
     const insuranceData = req.body;
 
-    console.log('Updating insurance for user');
+    // console.log('Updating insurance for user');
 
     let patient = await Patient.findOne({ userId });
 

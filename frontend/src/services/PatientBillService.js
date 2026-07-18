@@ -1,3 +1,4 @@
+// services/PatientBillService.js
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -18,21 +19,7 @@ billApi.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-billApi.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
-
 export const billService = {
-  // Get all bills for the logged-in patient
   getMyBills: async (filters = {}) => {
     try {
       const params = new URLSearchParams();
@@ -45,41 +32,41 @@ export const billService = {
       const response = await billApi.get(url);
       return response.data;
     } catch (error) {
+      console.error('Error fetching bills:', error);
       throw error.response?.data || { success: false, message: 'Failed to load bills' };
     }
   },
 
-  // Get bill details
   getBillDetails: async (id) => {
     try {
       const response = await billApi.get(`/bills/${id}`);
       return response.data;
     } catch (error) {
+      console.error('Error fetching bill details:', error);
       throw error.response?.data || { success: false, message: 'Failed to load bill details' };
     }
   },
 
-  // Get bill stats
   getBillStats: async () => {
     try {
       const response = await billApi.get('/bills/patient/stats');
       return response.data;
     } catch (error) {
+      console.error('Error fetching bill stats:', error);
       throw error.response?.data || { success: false, message: 'Failed to load bill stats' };
     }
   },
 
-  // Pay a bill
   payBill: async (id, paymentMethod) => {
     try {
       const response = await billApi.put(`/bills/${id}/pay`, { paymentMethod });
       return response.data;
     } catch (error) {
+      console.error('Error paying bill:', error);
       throw error.response?.data || { success: false, message: 'Failed to pay bill' };
     }
   },
 
-  // Download bill PDF
   downloadBill: async (id) => {
     try {
       const response = await billApi.get(`/bills/${id}/download`, {
@@ -87,6 +74,7 @@ export const billService = {
       });
       return response.data;
     } catch (error) {
+      console.error('Error downloading bill:', error);
       throw error.response?.data || { success: false, message: 'Failed to download bill' };
     }
   },

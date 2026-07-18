@@ -14,7 +14,7 @@ import {
     CheckCircle,
     AlertCircle
 } from 'lucide-react';
-import { FileText } from 'lucide-react'; 
+import { FileText } from 'lucide-react';
 import Navbar from './Navbar.jsx';
 import { billService } from '../services/PatientBillService.js';
 
@@ -28,6 +28,10 @@ export default function PatientBills() {
     const [error, setError] = useState(null);
     const [actionLoading, setActionLoading] = useState(null);
     const [notification, setNotification] = useState({ type: '', message: '' });
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedBillId, setSelectedBillId] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState('Cash');
+    const [paymentProcessing, setPaymentProcessing] = useState(false);
 
     const tabs = ['All', 'Consultation', 'Laboratory', 'Medicines', 'Unpaid'];
 
@@ -41,8 +45,9 @@ export default function PatientBills() {
             setLoading(true);
             setError(null);
             const response = await billService.getMyBills();
+            // console.log('Bills response:', response);
             if (response.success) {
-                setBills(response.data);
+                setBills(response.data || []);
             }
         } catch (error) {
             console.error('Error fetching bills:', error);
@@ -86,56 +91,90 @@ export default function PatientBills() {
         return matchesTab && matchesSearch;
     });
 
-    const handlePayBill = async (billId) => {
+    // Open payment modal
+    const handleOpenPayment = (billId) => {
+        setSelectedBillId(billId);
+        setShowPaymentModal(true);
+    };
+
+    // Process payment
+    const handleProcessPayment = async () => {
+        if (!selectedBillId) return;
+        
         try {
-            setActionLoading(billId);
-            const response = await billService.payBill(billId, 'Cash');
+            setPaymentProcessing(true);
+            // console.log('Processing payment for bill:', selectedBillId);
+            
+            const response = await billService.payBill(selectedBillId, paymentMethod);
+            // console.log('Payment response:', response);
+            
             if (response.success) {
                 showNotification('success', 'Bill paid successfully!');
+                setShowPaymentModal(false);
+                setSelectedBillId(null);
                 await fetchBills();
                 await fetchStats();
+            } else {
+                showNotification('error', response.message || 'Failed to pay bill');
             }
         } catch (error) {
             console.error('Error paying bill:', error);
             showNotification('error', error.message || 'Failed to pay bill');
         } finally {
-            setActionLoading(null);
+            setPaymentProcessing(false);
         }
     };
 
+    // View bill details
     const handleViewBill = async (billId) => {
         try {
+            // console.log('Viewing bill/order ID:', billId);
             const response = await billService.getBillDetails(billId);
             if (response.success) {
                 const bill = response.data;
-                const items = bill.items.map(item => 
-                    `${item.medicineName} x${item.quantity} = ₹${item.total.toFixed(2)}`
+                // console.log('Bill details:', bill);
+
+                const items = bill.items || [];
+                const itemList = items.map(item =>
+                    `${item.medicineName || item.name} x${item.quantity} = ₹${((item.price || 0) * (item.quantity || 0) || item.total || 0).toFixed(2)}`
                 ).join('\n');
+
                 alert(
-                    `Bill Details:\n\n` +
-                    `Bill ID: ${bill.billId}\n` +
-                    `Date: ${new Date(bill.createdAt).toLocaleDateString()}\n` +
-                    `Amount: ₹${bill.totalAmount.toFixed(2)}\n` +
-                    `Status: ${bill.paymentStatus}\n\n` +
-                    `Items:\n${items}`
+                    `Bill Details\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `Bill ID: ${bill.billId || bill.orderId || 'N/A'}\n` +
+                    `Date: ${bill.date || new Date(bill.createdAt).toLocaleDateString()}\n` +
+                    `Amount: ₹${(bill.totalAmount || bill.amountRaw || 0).toFixed(2)}\n` +
+                    `Status: ${bill.paymentStatus || bill.status || 'Unpaid'}\n` +
+                    `Patient: ${bill.patientName || 'N/A'}\n` +
+                    `Doctor: ${bill.doctorName || 'N/A'}\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `Items:\n${itemList || 'No items'}\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━━━`
                 );
             }
         } catch (error) {
             console.error('Error viewing bill:', error);
-            showNotification('error', 'Failed to load bill details');
+            showNotification('error', error.message || 'Failed to load bill details');
         }
     };
 
     const handleDownloadBill = async (billId) => {
         try {
-            const blob = await billService.downloadBill(billId);
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Bill-${billId}.pdf`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-            showNotification('success', 'Bill downloaded successfully!');
+            // console.log('Downloading bill:', billId);
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showNotification('error', 'Please login to download bills');
+                return;
+            }
+
+            // Open in new tab - simple like appointments
+            const downloadUrl = `http://localhost:5000/api/bills/${billId}/download`;
+            window.open(downloadUrl, '_blank');
+            
+            showNotification('success', 'Bill opened in new tab!');
+            
         } catch (error) {
             console.error('Error downloading bill:', error);
             showNotification('error', 'Failed to download bill');
@@ -191,17 +230,82 @@ export default function PatientBills() {
 
             {/* Notification */}
             {notification.message && (
-                <div className={`fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-3 ${
-                    notification.type === 'success' 
-                        ? 'bg-green-50 text-green-800 border border-green-200' 
+                <div className={`fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-3 ${notification.type === 'success'
+                        ? 'bg-green-50 text-green-800 border border-green-200'
                         : 'bg-red-50 text-red-800 border border-red-200'
-                }`}>
+                    }`}>
                     {notification.type === 'success' ? (
                         <CheckCircle className="w-5 h-5" />
                     ) : (
                         <AlertCircle className="w-5 h-5" />
                     )}
                     <span className="font-medium">{notification.message}</span>
+                </div>
+            )}
+
+            {/* Payment Modal */}
+            {showPaymentModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl max-w-md w-full shadow-xl">
+                        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <CreditCard className="w-5 h-5 text-blue-500" />
+                                Payment Details
+                            </h3>
+                            <button
+                                onClick={() => {
+                                    setShowPaymentModal(false);
+                                    setSelectedBillId(null);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                <p className="text-sm font-medium text-blue-800">Payment Method</p>
+                                <div className="mt-3 grid grid-cols-3 gap-2">
+                                    {['Cash', 'Card', 'UPI'].map((method) => (
+                                        <button
+                                            key={method}
+                                            onClick={() => setPaymentMethod(method)}
+                                            className={`p-3 rounded-lg border-2 text-center transition ${paymentMethod === method
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            <div className="text-xl">
+                                                {method === 'Cash' && '💵'}
+                                                {method === 'Card' && '💳'}
+                                                {method === 'UPI' && '📱'}
+                                            </div>
+                                            <p className="text-xs font-medium mt-1">{method}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleProcessPayment}
+                                disabled={paymentProcessing}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {paymentProcessing ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="w-5 h-5" />
+                                        Confirm Payment
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -246,23 +350,21 @@ export default function PatientBills() {
                         {tabs.map((tab) => {
                             const isActive = activeTab === tab;
                             const count = tab === 'All' ? bills.length :
-                                        tab === 'Unpaid' ? bills.filter(b => b.status === 'Unpaid').length :
-                                        bills.filter(b => b.category === tab).length;
+                                tab === 'Unpaid' ? bills.filter(b => b.status === 'Unpaid').length :
+                                    bills.filter(b => b.category === tab).length;
                             return (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-6 py-2 rounded-xl font-bold text-xs sm:text-sm border whitespace-nowrap transition-all flex items-center gap-2 ${
-                                        isActive
+                                    className={`px-6 py-2 rounded-xl font-bold text-xs sm:text-sm border whitespace-nowrap transition-all flex items-center gap-2 ${isActive
                                             ? 'bg-[#00B4D8] text-white border-[#00B4D8]'
                                             : 'bg-white text-[#00B4D8] border-gray-200 hover:bg-gray-50'
-                                    }`}
+                                        }`}
                                 >
                                     {tab}
                                     {count > 0 && (
-                                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                            isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                                        }`}>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                                            }`}>
                                             {count}
                                         </span>
                                     )}
@@ -296,62 +398,69 @@ export default function PatientBills() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#BCE1EC]">
-                                        {filteredBills.map((bill, idx) => (
-                                            <tr key={bill._id || idx} className="hover:bg-slate-50 text-center transition-colors text-sm sm:text-base">
-                                                <td className="py-5 px-6 font-bold text-gray-800 whitespace-nowrap">
-                                                    {bill.billId || bill.invoiceId || 'N/A'}
-                                                </td>
-                                                <td className="py-5 px-6 font-semibold text-gray-700 whitespace-nowrap">
-                                                    {bill.date || 'N/A'}
-                                                </td>
-                                                <td className="py-5 px-6 font-bold text-gray-800">
-                                                    {bill.category || 'Other'}
-                                                </td>
-                                                <td className="py-5 px-6 font-bold text-gray-800">
-                                                    {bill.department || 'General'}
-                                                </td>
-                                                <td className="py-5 px-6 font-bold text-gray-800 whitespace-nowrap">
-                                                    {bill.amount || `Rs. ${bill.amountRaw?.toFixed(2) || 0}`}
-                                                </td>
-                                                <td className="py-5 px-6 text-center whitespace-nowrap">
-                                                    <span className={`font-bold text-sm ${bill.status === 'Paid' ? 'text-[#2E7D32]' : 'text-[#D32F2F]'}`}>
-                                                        {bill.status || 'Unpaid'}
-                                                    </span>
-                                                </td>
-                                                <td className="py-5 px-6 text-center whitespace-nowrap">
-                                                    <button 
-                                                        onClick={() => handleViewBill(bill._id)}
-                                                        className="bg-[#00B4D8] hover:bg-[#0096B4] text-white font-bold text-xs sm:text-sm py-1.5 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-1 mx-auto"
-                                                    >
-                                                        <Eye className="w-3 h-3" />
-                                                        <span>View</span>
-                                                    </button>
-                                                </td>
-                                                <td className="py-5 px-6 text-center whitespace-nowrap">
-                                                    {bill.status === 'Paid' ? (
-                                                        <button 
-                                                            onClick={() => handleDownloadBill(bill._id)}
-                                                            className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs sm:text-sm py-1.5 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-1 mx-auto"
+                                        {filteredBills.map((bill, idx) => {
+                                            const isPaid = bill.status === 'Paid' || bill.paymentStatus === 'Paid';
+                                            
+                                            return (
+                                                <tr key={bill._id || idx} className="hover:bg-slate-50 text-center transition-colors text-sm sm:text-base">
+                                                    <td className="py-5 px-6 font-bold text-gray-800 whitespace-nowrap">
+                                                        {bill.billId || bill.invoiceId || 'N/A'}
+                                                    </td>
+                                                    <td className="py-5 px-6 font-semibold text-gray-700 whitespace-nowrap">
+                                                        {bill.date || 'N/A'}
+                                                    </td>
+                                                    <td className="py-5 px-6 font-bold text-gray-800">
+                                                        {bill.category || 'Other'}
+                                                    </td>
+                                                    <td className="py-5 px-6 font-bold text-gray-800">
+                                                        {bill.department || 'General'}
+                                                    </td>
+                                                    <td className="py-5 px-6 font-bold text-gray-800 whitespace-nowrap">
+                                                        {bill.amount || `Rs. ${(bill.totalAmount || bill.amountRaw || 0).toFixed(2)}`}
+                                                    </td>
+                                                    <td className="py-5 px-6 text-center whitespace-nowrap">
+                                                        <span className={`font-bold text-sm ${isPaid ? 'text-[#2E7D32]' : 'text-[#D32F2F]'}`}>
+                                                            {isPaid ? '✅ Paid' : '⚠️ Unpaid'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-5 px-6 text-center whitespace-nowrap">
+                                                        <button
+                                                            onClick={() => handleViewBill(bill._id)}
+                                                            className="bg-[#00B4D8] hover:bg-[#0096B4] text-white font-bold text-xs sm:text-sm py-1.5 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-1 mx-auto"
+                                                            title="View Bill Details"
                                                         >
-                                                            <Download className="w-3 h-3" />
-                                                            <span>Download</span>
+                                                            <Eye className="w-3 h-3" />
+                                                            <span>View</span>
                                                         </button>
-                                                    ) : (
-                                                        <button 
-                                                            onClick={() => handlePayBill(bill._id)}
-                                                            disabled={actionLoading === bill._id}
-                                                            className="bg-[#1B5E20] hover:bg-[#123C15] text-white font-bold text-xs sm:text-sm py-1.5 px-6 rounded-lg shadow-sm transition-colors min-w-[80px] disabled:opacity-50"
-                                                        >
-                                                            {actionLoading === bill._id ? (
-                                                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                                                            ) : (
-                                                                'Pay'
-                                                            )}
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="py-5 px-6 text-center whitespace-nowrap">
+                                                        {isPaid ? (
+                                                            <button
+                                                                onClick={() => handleDownloadBill(bill._id)}
+                                                                className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs sm:text-sm py-1.5 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-1 mx-auto"
+                                                                title="Download Bill"
+                                                            >
+                                                                <Download className="w-3 h-3" />
+                                                                <span>Download</span>
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleOpenPayment(bill._id)}
+                                                                disabled={actionLoading === bill._id}
+                                                                className="bg-[#1B5E20] hover:bg-[#123C15] text-white font-bold text-xs sm:text-sm py-1.5 px-6 rounded-lg shadow-sm transition-colors min-w-[80px] disabled:opacity-50"
+                                                                title="Pay Bill"
+                                                            >
+                                                                {actionLoading === bill._id ? (
+                                                                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                                                ) : (
+                                                                    'Pay'
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
