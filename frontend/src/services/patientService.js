@@ -108,6 +108,17 @@ export const patientService = {
       throw error.response?.data || { success: false, message: 'Failed to update password' };
     }
   },
+
+  // Get all patients — receptionist / admin
+  getAllPatients: async () => {
+    try {
+      const response = await patientApi.get('/patient/all');
+      return response.data;
+    } catch (error) {
+      console.error('Error in getAllPatients:', error);
+      throw error.response?.data || { success: false, message: 'Failed to load patients' };
+    }
+  },
 };
 
 // Also export the api instance as default

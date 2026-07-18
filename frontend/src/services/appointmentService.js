@@ -106,6 +106,17 @@ export const appointmentService = {
         }
     },
 
+    // Create an appointment directly — receptionist / admin
+    createAppointmentByReceptionist: async (data) => {
+        try {
+            const response = await appointmentApi.post('/appointments/receptionist-create', data);
+            return response.data;
+        } catch (error) {
+            console.error('Error in createAppointmentByReceptionist:', error);
+            throw error.response?.data || { success: false, message: 'Failed to create appointment' };
+        }
+    },
+
     // Get appointments assigned to the logged-in doctor
     getDoctorAppointments: async () => {
         try {

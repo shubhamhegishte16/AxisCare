@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, authorizeRole } from '../middleware/authMiddleware.js';
-import { bookAppointment, getMyAppointments, cancelAppointment, getAllAppointments, updateAppointmentStatus, getDoctorsByDepartment, getDoctorAppointments, cancelByDoctor, getDoctorPatients, completeByDoctor } from '../controllers/appointmentController.js';
+import { bookAppointment, getMyAppointments, cancelAppointment, getAllAppointments, updateAppointmentStatus, getDoctorsByDepartment, getDoctorAppointments, cancelByDoctor, getDoctorPatients, completeByDoctor, createAppointmentByReceptionist } from '../controllers/appointmentController.js';
 import uploadAppointmentDoc from '../utils/uploadAppointmentDoc.js';
 const router = express.Router();
 router.use(protect);
@@ -12,6 +12,7 @@ router.put('/:id/cancel', cancelAppointment);
 router.get('/doctors', getDoctorsByDepartment);
 // Admin / receptionist routes
 router.get('/all', authorizeRole('admin', 'receptionist'), getAllAppointments);
+router.post('/receptionist-create', authorizeRole('admin', 'receptionist'), createAppointmentByReceptionist);
 router.put('/:id/status', authorizeRole('admin', 'receptionist'), updateAppointmentStatus);
 // Doctor routes
 router.get('/my-doctor-appointments', authorizeRole('doctor'), getDoctorAppointments);

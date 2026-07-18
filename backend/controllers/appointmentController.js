@@ -90,7 +90,57 @@ export const cancelAppointment = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
-// GET /api/appointments/all — admin / receptionist
+// POST /api/appointments/receptionist-create — receptionist/admin books an appointment for a patient
+export const createAppointmentByReceptionist = async (req, res) => {
+  try {
+    const {
+      phoneNumber, fullName, email, age, gender, address,
+      department, doctor, doctorProfileId, appointmentType,
+      preferredDate, preferredTime, reasonForVisit, symptoms, status,
+    } = req.body;
+
+    if (!phoneNumber || !fullName || !department || !doctor || !appointmentType || !preferredDate || !preferredTime || !reasonForVisit) {
+      return res.status(400).json({ success: false, message: 'Please fill all required fields.' });
+    }
+
+    // Find the patient by phone so we can link the appointment to their profile
+    const patient = await Patient.findOne({ phoneNumber });
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'No patient found with this phone number. Please register the patient first.',
+      });
+    }
+
+    const appointmentId = generateAppointmentId();
+    const appointment = new Appointment({
+      userId: patient.userId,
+      patientId: patient._id,
+      appointmentId,
+      fullName,
+      phoneNumber,
+      email: email || patient.email,
+      age: age || '',
+      gender: gender || patient.gender,
+      address: address || patient.address,
+      department,
+      doctor,
+      doctorProfileId: doctorProfileId || null,
+      appointmentType,
+      preferredDate,
+      preferredTime,
+      reasonForVisit,
+      symptoms: symptoms || '',
+      status: status || 'Scheduled',
+    });
+    await appointment.save();
+    res.status(201).json({ success: true, message: 'Appointment created successfully.', data: appointment });
+  } catch (error) {
+    console.error('Error in createAppointmentByReceptionist:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
 export const getAllAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find().sort({ createdAt: -1 });

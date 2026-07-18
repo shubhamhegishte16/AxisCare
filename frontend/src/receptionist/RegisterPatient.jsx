@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { UserPlus, Printer, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Printer, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import ReceptionistLayout from './ReceptionistLayout';
+import { receptionistService } from '../services/receptionistService';
 
 const Field = ({ label, ...props }) => (
   <div>
@@ -20,15 +21,41 @@ const emptyForm = {
 const RegisterPatient = () => {
   const [form, setForm] = useState(emptyForm);
   const [registered, setRegistered] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (field) => (e) => setForm({ ...form, [field]: e.target.value });
-  const clearForm = () => setForm(emptyForm);
+  const clearForm = () => {
+    setForm(emptyForm);
+    setRegistered(null);
+    setError('');
+  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.fullName || !form.phone) return;
-    const id = `PT-${Math.floor(2000 + Math.random() * 900)}`;
-    setRegistered({ id, ...form });
+    if (!form.fullName || !form.phone) {
+      setError('Full name and phone number are required.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      const res = await receptionistService.registerPatient(form);
+      if (res.success) {
+        setRegistered({
+          id: res.data.patientId,
+          fullName: form.fullName,
+          phone: form.phone,
+          doctor: form.doctor,
+          appointmentType: form.appointmentType,
+          tempPassword: res.data.tempPassword,
+        });
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to register patient.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,6 +73,12 @@ const RegisterPatient = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Form */}
         <form onSubmit={handleSubmit} className="xl:col-span-2 bg-white rounded-[18px] border border-slate-100 shadow-sm p-6 flex flex-col gap-5">
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm font-semibold px-4 py-3 rounded-xl">
+              <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field label="Full Name *" placeholder="Patient full name" value={form.fullName} onChange={handleChange('fullName')} required />
             <Field label="Phone Number *" placeholder="10-digit number" value={form.phone} onChange={handleChange('phone')} required />
@@ -108,8 +141,13 @@ const RegisterPatient = () => {
           </div>
 
           <div className="flex gap-3 pt-1">
-            <button type="submit" className="flex-1 bg-[#2563EB] hover:bg-blue-700 text-white text-sm font-bold py-2.5 rounded-xl transition-colors">
-              Register Patient
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#2563EB] hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-bold py-2.5 rounded-xl transition-colors"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {loading ? 'Registering…' : 'Register Patient'}
             </button>
             <button type="button" onClick={clearForm} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold py-2.5 rounded-xl transition-colors">
               Clear Form
@@ -132,6 +170,9 @@ const RegisterPatient = () => {
                 <div className="flex justify-between"><span className="text-slate-400">Phone</span><span className="font-semibold text-slate-600">{registered.phone}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Doctor</span><span className="font-semibold text-slate-600">{registered.doctor || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Visit Type</span><span className="font-semibold text-slate-600">{registered.appointmentType}</span></div>
+                {registered.tempPassword && (
+                  <div className="flex justify-between"><span className="text-slate-400">Temp Password</span><span className="font-bold text-amber-600">{registered.tempPassword}</span></div>
+                )}
               </div>
               <button className="mt-4 flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-[#2563EB]/40 text-slate-700 text-sm font-bold py-2.5 rounded-xl transition-colors">
                 <Printer className="w-4 h-4" /> Print Patient ID Card

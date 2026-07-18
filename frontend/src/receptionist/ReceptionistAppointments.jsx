@@ -11,6 +11,8 @@ import {
   Stethoscope,
   User,
   Loader2,
+  X,
+  AlertCircle,
 } from 'lucide-react';
 import { appointmentService } from '../services/appointmentService';
 import ReceptionistLayout from './ReceptionistLayout';
@@ -37,11 +39,27 @@ const StatCard = ({ icon: Icon, iconColor, label, value, sub }) => (
   </div>
 );
 
+const Field = ({ label, ...props }) => (
+  <div>
+    <label className="block text-xs font-bold text-slate-500 mb-1.5">{label}</label>
+    <input
+      {...props}
+      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] text-sm outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]/40 transition-all"
+    />
+  </div>
+);
+
 const appointmentStatusStyles = {
   Scheduled: 'bg-emerald-50 text-emerald-600',
   Rescheduled: 'bg-amber-50 text-amber-600',
   Cancelled: 'bg-red-50 text-red-500',
   Pending: 'bg-blue-50 text-[#2563EB]',
+};
+
+const emptyNewAppointment = {
+  phoneNumber: '', fullName: '', email: '', age: '', gender: '', address: '',
+  department: '', doctor: '', appointmentType: 'In-Person',
+  preferredDate: '', preferredTime: '', reasonForVisit: '', symptoms: '',
 };
 
 export default function ReceptionistAppointments() {
@@ -50,6 +68,11 @@ export default function ReceptionistAppointments() {
   const [requests, setRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [actionLoading, setActionLoading] = useState({});
+
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newAppointment, setNewAppointment] = useState(emptyNewAppointment);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   const fetchAll = async () => {
     try {
@@ -90,6 +113,30 @@ export default function ReceptionistAppointments() {
       if (res.success) setAppointments((prev) => prev.map((a) => (a._id === id ? { ...a, status } : a)));
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleCreateAppointment = async (e) => {
+    e.preventDefault();
+    const required = ['phoneNumber', 'fullName', 'department', 'doctor', 'appointmentType', 'preferredDate', 'preferredTime', 'reasonForVisit'];
+    const missing = required.some((f) => !newAppointment[f]);
+    if (missing) {
+      setCreateError('Please fill all required fields (marked *).');
+      return;
+    }
+    setCreateError('');
+    setCreating(true);
+    try {
+      const res = await appointmentService.createAppointmentByReceptionist(newAppointment);
+      if (res.success) {
+        setAppointments((prev) => [res.data, ...prev]);
+        setNewAppointment(emptyNewAppointment);
+        setShowNewModal(false);
+      }
+    } catch (err) {
+      setCreateError(err.message || 'Failed to create appointment. Make sure the patient is registered first.');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -199,7 +246,10 @@ export default function ReceptionistAppointments() {
       <div className="bg-white rounded-[18px] border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-slate-100">
           <h2 className="text-base font-bold text-slate-800">Appointment Table</h2>
-          <button className="flex items-center justify-center gap-1.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors">
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="flex items-center justify-center gap-1.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors"
+          >
             <Plus className="w-3.5 h-3.5" /> New Appointment
           </button>
         </div>
@@ -279,6 +329,142 @@ export default function ReceptionistAppointments() {
           </table>
         </div>
       </div>
+
+      {/* New Appointment Modal */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <div className="bg-white rounded-[18px] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-[18px]">
+              <h2 className="text-base font-bold text-slate-800">New Appointment</h2>
+              <button
+                onClick={() => { setShowNewModal(false); setCreateError(''); }}
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateAppointment} className="p-6 flex flex-col gap-4">
+              {createError && (
+                <div className="flex items-center gap-2 bg-red-50 text-red-600 text-sm font-semibold px-4 py-3 rounded-xl">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {createError}
+                </div>
+              )}
+              <p className="text-xs text-slate-400 -mt-1">
+                Patient must already be registered. We look them up by phone number.
+              </p>
+
+              <Field
+                label="Patient Phone Number *"
+                placeholder="Registered phone number"
+                value={newAppointment.phoneNumber}
+                onChange={(e) => setNewAppointment({ ...newAppointment, phoneNumber: e.target.value })}
+              />
+              <Field
+                label="Patient Full Name *"
+                placeholder="Full name"
+                value={newAppointment.fullName}
+                onChange={(e) => setNewAppointment({ ...newAppointment, fullName: e.target.value })}
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field
+                  label="Email"
+                  type="email"
+                  placeholder="patient@email.com"
+                  value={newAppointment.email}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, email: e.target.value })}
+                />
+                <Field
+                  label="Age"
+                  placeholder="Age"
+                  value={newAppointment.age}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, age: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field
+                  label="Department *"
+                  placeholder="e.g. Cardiology"
+                  value={newAppointment.department}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, department: e.target.value })}
+                />
+                <Field
+                  label="Doctor *"
+                  placeholder="e.g. Dr. Ananya Sharma"
+                  value={newAppointment.doctor}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, doctor: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5">Type *</label>
+                  <select
+                    value={newAppointment.appointmentType}
+                    onChange={(e) => setNewAppointment({ ...newAppointment, appointmentType: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] text-sm outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+                  >
+                    <option>In-Person</option>
+                    <option>Video Consult</option>
+                  </select>
+                </div>
+                <Field
+                  label="Date *"
+                  type="date"
+                  value={newAppointment.preferredDate}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, preferredDate: e.target.value })}
+                />
+                <Field
+                  label="Time *"
+                  type="time"
+                  value={newAppointment.preferredTime}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, preferredTime: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5">Reason for Visit *</label>
+                <input
+                  value={newAppointment.reasonForVisit}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, reasonForVisit: e.target.value })}
+                  placeholder="Brief reason for visit"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] text-sm outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5">Symptoms</label>
+                <textarea
+                  rows={2}
+                  value={newAppointment.symptoms}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, symptoms: e.target.value })}
+                  placeholder="Optional"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] text-sm outline-none focus:ring-2 focus:ring-[#2563EB]/20 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="flex-1 bg-[#2563EB] hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-bold py-2.5 rounded-xl transition-colors"
+                >
+                  {creating ? 'Creating…' : 'Create Appointment'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowNewModal(false); setCreateError(''); }}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold py-2.5 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </ReceptionistLayout>
   );
 }
