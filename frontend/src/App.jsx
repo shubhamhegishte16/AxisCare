@@ -42,6 +42,19 @@ import Billing from './PharmacistPanel/Billing.jsx';
 import Report from './PharmacistPanel/Reports.jsx';
 import Notification from './PharmacistPanel/Notifications.jsx';
 
+import AdminDashboard from './AdminPanel/AdminDashboard.jsx';
+import AdminUsers from './AdminPanel/Users.jsx';
+import AdminDoctors from './AdminPanel/Doctors.jsx';
+import AdminPatients from './AdminPanel/Patients.jsx';
+import AdminAppointments from './AdminPanel/Appointments.jsx';
+import AdminDepartments from './AdminPanel/Departments.jsx';
+import AdminPharmacyOversight from './AdminPanel/PharmacyOversight.jsx';
+import AdminBilling from './AdminPanel/Billing.jsx';
+import AdminReports from './AdminPanel/Reports.jsx';
+import AdminNotifications from './AdminPanel/Notifications.jsx';
+import AdminProfile from './AdminPanel/AdminProfile.jsx';
+
+
 // Receptionist Panel
 import ReceptionistDashboard from './receptionist/ReceptionistDashboard.jsx';
 import ReceptionistAppointments from './receptionist/ReceptionistAppointments.jsx';
@@ -108,6 +121,20 @@ function App() {
         <Route path="/pharmacy/reports" element={<Report />} />
         <Route path="/pharmacy/notifications" element={<Notification />} />
 
+
+        {/* Admin Dashboard */}
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/doctors" element={<AdminDoctors />} />
+        <Route path="/admin/patients" element={<AdminPatients />} />
+        <Route path="/admin/appointments" element={<AdminAppointments />} />
+        <Route path="/admin/departments" element={<AdminDepartments />} />
+        <Route path="/admin/pharmacy" element={<AdminPharmacyOversight />} />
+        <Route path="/admin/billing" element={<AdminBilling />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/notifications" element={<AdminNotifications />} />
+        <Route path="/admin/profile" element={<AdminProfile />} />
+
         {/* Receptionist Panel */}
         <Route path="/receptionist/dashboard" element={<ReceptionistDashboard />} />
         <Route path="/receptionist/appointments" element={<ReceptionistAppointments />} />
@@ -125,6 +152,7 @@ function App() {
           path="/pharmacy"
           element={<Navigate to="/pharmacist/login" replace />}
         />
+        
 
         {/* Laboratory Panel */}
         <Route path="/lab" element={<LabDashboard />} />
