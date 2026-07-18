@@ -17,10 +17,9 @@ import PatientNotificationRoutes from "./routes/PatientNotificationRoutes.js";
 import medicalHistoryRoutes from './routes/medicalHistoryRoutes.js';
 import LabAppointmentRoutes from './routes/LabAppointmentRoutes.js';
 import orderRoutes from './routes/pharmacy/orderRoutes.js';
-<<<<<<< HEAD
+
 import billRoutes from './routes/PatientBillRoutes.js';
-=======
->>>>>>> d9195c598e222a22f0a9e962f1e9b84df0a477a9
+
 
 // Receptionist Panel
 import receptionistRoutes from "./routes/receptionistRoutes.js";
@@ -78,11 +77,8 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/notifications", PatientNotificationRoutes);
 app.use("/api/medical", medicalHistoryRoutes);
 app.use('/api/lab-appointments', LabAppointmentRoutes);
-app.use('/api/pharmacy', orderRoutes);
-<<<<<<< HEAD
 app.use('/api/bills', billRoutes);
-=======
->>>>>>> d9195c598e222a22f0a9e962f1e9b84df0a477a9
+
 
 // ================= Receptionist =================
 app.use("/api/receptionist", receptionistRoutes);
@@ -97,6 +93,8 @@ app.use("/api/pharmacy/prescriptions", pharmacyPrescriptionRoutes);
 app.use("/api/pharmacy/notifications", pharmacyNotificationRoutes);
 app.use("/api/pharmacy/reports", pharmacyReportsRoutes);
 
+// Fallback for patient pharmacy routes (must be after specific pharmacy routes)
+app.use('/api/pharmacy', orderRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

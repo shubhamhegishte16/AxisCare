@@ -67,53 +67,53 @@ export const pharmacyService = {
 
   // Pharmacy module
   // Dashboard
-  getDashboard: () => handle(pharmacyApi.get('/dashboard'), 'Failed to fetch dashboard data'),
+  getDashboard: () => handle(pharmacyApi.get('/pharmacy/dashboard'), 'Failed to fetch dashboard data'),
 
   // Reports
-  getReports: () => handle(pharmacyApi.get('/reports'), 'Failed to fetch reports data'),
+  getReports: () => handle(pharmacyApi.get('/pharmacy/reports'), 'Failed to fetch reports data'),
 
   // Medicines / Inventory
-  getMedicines: (params) => handle(pharmacyApi.get('/medicines', { params }), 'Failed to fetch medicines'),
-  getMedicineStats: () => handle(pharmacyApi.get('/medicines/stats'), 'Failed to fetch medicine stats'),
-  getInventoryStats: () => handle(pharmacyApi.get('/medicines/inventory-stats'), 'Failed to fetch inventory stats'),
-  getMedicineById: (id) => handle(pharmacyApi.get(`/medicines/${id}`), 'Failed to fetch medicine'),
-  createMedicine: (data) => handle(pharmacyApi.post('/medicines', data), 'Failed to add medicine'),
-  updateMedicine: (id, data) => handle(pharmacyApi.put(`/medicines/${id}`, data), 'Failed to update medicine'),
-  deleteMedicine: (id) => handle(pharmacyApi.delete(`/medicines/${id}`), 'Failed to delete medicine'),
+  getMedicines: (params) => handle(pharmacyApi.get('/pharmacy/medicines', { params }), 'Failed to fetch medicines'),
+  getMedicineStats: () => handle(pharmacyApi.get('/pharmacy/medicines/stats'), 'Failed to fetch medicine stats'),
+  getInventoryStats: () => handle(pharmacyApi.get('/pharmacy/medicines/inventory-stats'), 'Failed to fetch inventory stats'),
+  getMedicineById: (id) => handle(pharmacyApi.get(`/pharmacy/medicines/${id}`), 'Failed to fetch medicine'),
+  createMedicine: (data) => handle(pharmacyApi.post('/pharmacy/medicines', data), 'Failed to add medicine'),
+  updateMedicine: (id, data) => handle(pharmacyApi.put(`/pharmacy/medicines/${id}`, data), 'Failed to update medicine'),
+  deleteMedicine: (id) => handle(pharmacyApi.delete(`/pharmacy/medicines/${id}`), 'Failed to delete medicine'),
   adjustStock: (id, type, amount) =>
-    handle(pharmacyApi.put(`/medicines/${id}/adjust-stock`, { type, amount }), 'Failed to adjust stock'),
+    handle(pharmacyApi.put(`/pharmacy/medicines/${id}/adjust-stock`, { type, amount }), 'Failed to adjust stock'),
 
   // Suppliers
-  getSuppliers: (params) => handle(pharmacyApi.get('/suppliers', { params }), 'Failed to fetch suppliers'),
-  getSupplierStats: () => handle(pharmacyApi.get('/suppliers/stats'), 'Failed to fetch supplier stats'),
-  createSupplier: (data) => handle(pharmacyApi.post('/suppliers', data), 'Failed to add supplier'),
-  updateSupplier: (id, data) => handle(pharmacyApi.put(`/suppliers/${id}`, data), 'Failed to update supplier'),
-  deleteSupplier: (id) => handle(pharmacyApi.delete(`/suppliers/${id}`), 'Failed to delete supplier'),
+  getSuppliers: (params) => handle(pharmacyApi.get('/pharmacy/suppliers', { params }), 'Failed to fetch suppliers'),
+  getSupplierStats: () => handle(pharmacyApi.get('/pharmacy/suppliers/stats'), 'Failed to fetch supplier stats'),
+  createSupplier: (data) => handle(pharmacyApi.post('/pharmacy/suppliers', data), 'Failed to add supplier'),
+  updateSupplier: (id, data) => handle(pharmacyApi.put(`/pharmacy/suppliers/${id}`, data), 'Failed to update supplier'),
+  deleteSupplier: (id) => handle(pharmacyApi.delete(`/pharmacy/suppliers/${id}`), 'Failed to delete supplier'),
 
   // Orders
-  getOrders: (params) => handle(pharmacyApi.get('/orders', { params }), 'Failed to fetch orders'),
-  getOrderStats: () => handle(pharmacyApi.get('/orders/stats'), 'Failed to fetch order stats'),
-  createOrder: (data) => handle(pharmacyApi.post('/orders', data), 'Failed to place order'),
+  getOrders: (params) => handle(pharmacyApi.get('/pharmacy/orders', { params }), 'Failed to fetch orders'),
+  getOrderStats: () => handle(pharmacyApi.get('/pharmacy/orders/stats'), 'Failed to fetch order stats'),
+  createOrder: (data) => handle(pharmacyApi.post('/pharmacy/orders', data), 'Failed to place order'),
   updateOrderStatus: (id, status) =>
-    handle(pharmacyApi.put(`/orders/${id}/status`, { status }), 'Failed to update order status'),
+    handle(pharmacyApi.put(`/pharmacy/orders/${id}/status`, { status }), 'Failed to update order status'),
 
   // Billing
-  getBills: (params) => handle(pharmacyApi.get('/billing', { params }), 'Failed to fetch bills'),
-  getBillingStats: () => handle(pharmacyApi.get('/billing/stats'), 'Failed to fetch billing stats'),
-  createBill: (data) => handle(pharmacyApi.post('/billing', data), 'Failed to create bill'),
-  markBillPaid: (id) => handle(pharmacyApi.put(`/billing/${id}/mark-paid`), 'Failed to mark bill as paid'),
+  getBills: (params) => handle(pharmacyApi.get('/pharmacy/billing', { params }), 'Failed to fetch bills'),
+  getBillingStats: () => handle(pharmacyApi.get('/pharmacy/billing/stats'), 'Failed to fetch billing stats'),
+  createBill: (data) => handle(pharmacyApi.post('/pharmacy/billing', data), 'Failed to create bill'),
+  markBillPaid: (id) => handle(pharmacyApi.put(`/pharmacy/billing/${id}/mark-paid`), 'Failed to mark bill as paid'),
 
   // Prescriptions
-  getPrescriptions: (params) => handle(pharmacyApi.get('/prescriptions', { params }), 'Failed to fetch prescriptions'),
-  getPrescriptionStats: () => handle(pharmacyApi.get('/prescriptions/stats'), 'Failed to fetch prescription stats'),
-  getPrescriptionById: (id) => handle(pharmacyApi.get(`/prescriptions/${id}`), 'Failed to fetch prescription'),
+  getPrescriptions: (params) => handle(pharmacyApi.get('/pharmacy/prescriptions', { params }), 'Failed to fetch prescriptions'),
+  getPrescriptionStats: () => handle(pharmacyApi.get('/pharmacy/prescriptions/stats'), 'Failed to fetch prescription stats'),
+  getPrescriptionById: (id) => handle(pharmacyApi.get(`/pharmacy/prescriptions/${id}`), 'Failed to fetch prescription'),
   updatePrescriptionStatus: (id, status) =>
-    handle(pharmacyApi.put(`/prescriptions/${id}/status`, { status }), 'Failed to update prescription status'),
+    handle(pharmacyApi.put(`/pharmacy/prescriptions/${id}/status`, { status }), 'Failed to update prescription status'),
 
   // Notifications
-  getNotifications: () => handle(pharmacyApi.get('/notifications'), 'Failed to fetch notifications'),
-  markNotificationRead: (id) => handle(pharmacyApi.put(`/notifications/${id}/read`), 'Failed to mark notification as read'),
-  markAllNotificationsRead: () => handle(pharmacyApi.put('/notifications/mark-all-read'), 'Failed to mark all as read'),
+  getNotifications: () => handle(pharmacyApi.get('/pharmacy/notifications'), 'Failed to fetch notifications'),
+  markNotificationRead: (id) => handle(pharmacyApi.put(`/pharmacy/notifications/${id}/read`), 'Failed to mark notification as read'),
+  markAllNotificationsRead: () => handle(pharmacyApi.put('/pharmacy/notifications/mark-all-read'), 'Failed to mark all as read'),
 };
 
 export default pharmacyApi;

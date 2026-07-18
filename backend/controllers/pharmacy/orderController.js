@@ -197,7 +197,7 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
+
 // @desc    Get dashboard stats
 // @route   GET /api/pharmacy/dashboard
 export const getDashboard = async (req, res) => {
@@ -259,13 +259,7 @@ export const getDashboard = async (req, res) => {
 
 export const checkMedicineAvailability = async (req, res) => {
   try {
-=======
 
-// PATIENT ORDER ROUTES
-
-export const checkMedicineAvailability = async (req, res) => {
-  try {
->>>>>>> d9195c598e222a22f0a9e962f1e9b84df0a477a9
     // console.log('Checking medicine availability');
     // console.log('Request body:', req.body);
     
