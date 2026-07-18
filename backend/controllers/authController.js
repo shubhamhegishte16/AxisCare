@@ -1,8 +1,8 @@
 import User from "../models/user.js";
 import generateToken from "../utils/generateToken.js";
 import bcrypt from "bcryptjs";
-
 import Patient from '../models/Patient.js';
+import { triggerDoctorNotification } from '../utils/triggerDoctorNotification.js';
 
 export const registerUser = async (req, res) => {
   try {
@@ -78,6 +78,26 @@ export const registerUser = async (req, res) => {
 
       // Generate Token
       const token = generateToken(user._id);
+
+      // If a new patient registers, notify all doctors
+      if (role === 'patient' || role === undefined) {
+        try {
+          const allDoctors = await User.find({ role: 'doctor' }).select('_id');
+          for (const doc of allDoctors) {
+            await triggerDoctorNotification(
+              doc._id,
+              'Medical',
+              'New Patient Registered',
+              `A new patient, ${fullName}, has registered on the system.`,
+              'View Patients',
+              '/doctordashboard/patients',
+              'medium'
+            );
+          }
+        } catch (notifErr) {
+          console.error('Error sending new patient notifications:', notifErr);
+        }
+      }
 
       // Set cookie
       res.cookie("jwt", token, {

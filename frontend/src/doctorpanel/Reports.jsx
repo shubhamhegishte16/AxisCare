@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import { 
   FileText, 
@@ -20,22 +20,143 @@ import {
   UploadCloud,
   FileBox,
   FilePlus,
-  ArrowRight
+  ArrowRight,
+  Trash2
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-const reportsData = [
-  { id: 'RP-2026-1248', patient: 'Rajesh Kumar', pid: 'P10234', reportType: 'Consultation Report', dept: 'Cardiology', date: '11 Jul 2026', time: '09:30 AM', status: 'COMPLETED', img: 'https://i.pravatar.cc/150?img=11', typeIcon: FileText, iconColor: 'text-blue-500' },
-  { id: 'RP-2026-1247', patient: 'Priya Mehta', pid: 'P10567', reportType: 'Medical Certificate', dept: 'General', date: '11 Jul 2026', time: '09:15 AM', status: 'COMPLETED', img: 'https://i.pravatar.cc/150?img=5', typeIcon: Award, iconColor: 'text-green-500' },
-  { id: 'RP-2026-1246', patient: 'Amit Verma', pid: 'P10890', reportType: 'Progress Report', dept: 'Cardiology', date: '10 Jul 2026', time: '04:20 PM', status: 'DRAFT', img: 'https://i.pravatar.cc/150?img=8', typeIcon: TrendingUp, iconColor: 'text-purple-500' },
-  { id: 'RP-2026-1245', patient: 'Neha Patil', pid: 'P11023', reportType: 'Discharge Summary', dept: 'Cardiology', date: '10 Jul 2026', time: '01:05 PM', status: 'COMPLETED', img: 'https://i.pravatar.cc/150?img=20', typeIcon: FileBox, iconColor: 'text-orange-500' },
-  { id: 'RP-2026-1244', patient: 'Suresh Chandra', pid: 'P11156', reportType: 'Fitness Certificate', dept: 'General', date: '09 Jul 2026', time: '11:45 AM', status: 'COMPLETED', img: 'https://i.pravatar.cc/150?img=13', typeIcon: FileCheck2, iconColor: 'text-red-500' },
-  { id: 'RP-2026-1243', patient: 'Sneha Kapoor', pid: 'P11345', reportType: 'Referral Letter', dept: 'Cardiology', date: '09 Jul 2026', time: '10:30 AM', status: 'PENDING', img: 'https://i.pravatar.cc/150?img=21', typeIcon: FilePlus, iconColor: 'text-yellow-500' },
-];
-const recentReports = [
-  { id: 1, patient: 'Rajesh Kumar', type: 'Consultation Report', status: 'COMPLETED', date: '11 Jul 2026', img: 'https://i.pravatar.cc/150?img=11' },
-  { id: 2, patient: 'Priya Mehta', type: 'Medical Certificate', status: 'COMPLETED', date: '11 Jul 2026', img: 'https://i.pravatar.cc/150?img=5' },
-];
+import { Link, useNavigate } from 'react-router-dom';
+import { doctorService } from '../services/doctorService';
+
 const Reports = () => {
+  const navigate = useNavigate();
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [menuOpenId, setMenuOpenId] = useState(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => setMenuOpenId(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const res = await doctorService.getReports();
+      if (res.success) {
+        setReports(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePublish = async (reportId) => {
+    if (!window.confirm('Publish this report? The patient will be notified.')) return;
+    try {
+      const res = await doctorService.updateReportStatus(reportId, 'Final');
+      if (res.success) {
+        setReports(prev => prev.map(r => r._id === reportId ? { ...r, status: 'Final' } : r));
+      }
+    } catch (e) {
+      alert(e.message || 'Failed to publish report');
+    }
+  };
+
+  const handleDelete = async (reportId) => {
+    if (!window.confirm('Delete this draft report? This cannot be undone.')) return;
+    try {
+      const res = await doctorService.deleteReport(reportId);
+      if (res.success) {
+        setReports(prev => prev.filter(r => r._id !== reportId));
+      }
+    } catch (e) {
+      alert(e.message || 'Failed to delete report');
+    }
+    setMenuOpenId(null);
+  };
+
+  const handlePrint = (report) => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Report - ${report._id}</title>
+          <style>
+            body { font-family: sans-serif; color: #333; margin: 40px; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #00B9D6; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo { font-size: 24px; font-weight: bold; color: #0b3363; }
+            .patient-card { background: #f8f9fa; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+            .section-title { font-size: 16px; font-weight: bold; color: #0b3363; margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+            .content { margin-top: 10px; font-size: 14px; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="logo">AxisCare</div>
+              <div>Medical Report</div>
+            </div>
+            <div style="text-align: right">
+              <h3>${report.reportType}</h3>
+              <div>Date: ${report.visitDate}</div>
+            </div>
+          </div>
+          <div class="patient-card">
+            <div>
+              <strong>Patient Name:</strong> ${report.patientName}<br>
+            </div>
+            <div>
+              <strong>Report ID:</strong> ${report._id}<br>
+              <strong>Status:</strong> ${report.status}
+            </div>
+          </div>
+          
+          <div class="section-title">Clinical Findings</div>
+          <div class="content">
+            <strong>Symptoms:</strong> ${report.symptoms || 'None'}<br><br>
+            <strong>Diagnosis:</strong> ${report.diagnosis || 'None'}<br><br>
+            <strong>Observations:</strong> ${report.clinicalObservations || 'None'}
+          </div>
+
+          <div class="section-title">Recommendations</div>
+          <div class="content">
+            <strong>Follow-up Advice:</strong> ${report.followUpAdvice || 'None'}<br><br>
+            <strong>Lifestyle Advice:</strong> ${report.lifestyleAdvice || 'None'}
+          </div>
+          
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const filteredReports = reports.filter(r => 
+    r.patientName.toLowerCase().includes(search.toLowerCase()) || 
+    r.reportType.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const getTypeIcon = (type) => {
+    if (type.includes('Certificate')) return Award;
+    if (type.includes('Progress')) return TrendingUp;
+    return FileText;
+  };
+
+  const getIconColor = (type) => {
+    if (type.includes('Certificate')) return 'text-green-500';
+    if (type.includes('Progress')) return 'text-purple-500';
+    return 'text-blue-500';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <Header />
@@ -53,30 +174,23 @@ const Reports = () => {
           <div className="xl:col-span-3 flex flex-col gap-6">
             {/* Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard title="Total Reports" value="248" subtext="All time" icon={FileText} iconColor="text-blue-500" bgColor="bg-blue-50" />
-              <StatCard title="Today's Reports" value="12" subtext={<span className="flex items-center text-green-600"><TrendingUp className="w-3 h-3 mr-1" /> 20% from yesterday</span>} icon={FileCheck2} iconColor="text-green-500" bgColor="bg-green-50" />
-              <StatCard title="Certificates" value="56" subtext="23% of total" icon={Award} iconColor="text-orange-500" bgColor="bg-orange-50" />
-              <StatCard title="Pending Reports" value="08" subtext="View and complete" icon={Clock} iconColor="text-red-500" bgColor="bg-red-50" /></div>
+              <StatCard title="Total Reports" value={reports.length} subtext="All time" icon={FileText} iconColor="text-blue-500" bgColor="bg-blue-50" />
+              <StatCard title="Today's Reports" value={reports.filter(r => r.visitDate === new Date().toISOString().split('T')[0]).length} subtext="Today" icon={FileCheck2} iconColor="text-green-500" bgColor="bg-green-50" />
+              <StatCard title="Certificates" value={reports.filter(r => r.reportType.includes('Certificate')).length} subtext="Total" icon={Award} iconColor="text-orange-500" bgColor="bg-orange-50" />
+              <StatCard title="Draft Reports" value={reports.filter(r => r.status === 'Draft').length} subtext="View and complete" icon={Clock} iconColor="text-red-500" bgColor="bg-red-50" /></div>
             {/* Filters & Search */}
             <div className="bg-white p-4 rounded-t-xl border border-gray-200 border-b-0 flex flex-col lg:flex-row items-center gap-4">
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input 
                   type="text" 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by patient name, report ID or type..." 
                   className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00B9D6] focus:border-transparent transition-all"
                 /></div>
-              <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 hide-scrollbar">
-                <button className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 whitespace-nowrap min-w-[200px]">
-                  <CalendarIcon className="w-4 h-4 text-gray-500" />
-                  11 Jul 2026 - 11 Jul 2026</button>
-                <button className="flex items-center justify-between gap-2 bg-white border border-gray-200 px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 whitespace-nowrap min-w-[150px]">
-                  All Report Types <ChevronDown className="w-4 h-4 text-gray-500" /></button>
-                <button className="flex items-center justify-between gap-2 bg-white border border-gray-200 px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 whitespace-nowrap min-w-[120px]">
-                  All Status <ChevronDown className="w-4 h-4 text-gray-500" /></button>
-                <button className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 whitespace-nowrap">
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filters</button></div></div>
+            </div>
+            
             {/* Table */}
             <div className="bg-white border border-gray-200 rounded-b-xl shadow-sm overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -85,90 +199,126 @@ const Reports = () => {
                     <th className="px-6 py-4">Report ID</th>
                     <th className="px-6 py-4">Patient</th>
                     <th className="px-6 py-4">Report Type</th>
-                    <th className="px-6 py-4">Created Date</th>
+                    <th className="px-6 py-4">Date</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4 text-right">Actions</th></tr></thead>
                 <tbody className="divide-y divide-gray-100">
-                  {reportsData.map((rep) => (
-                    <tr key={rep.id} className="hover:bg-gray-50 transition-colors">
+                  {loading ? (
+                    <tr><td colSpan="6" className="text-center py-8 text-gray-500">Loading reports...</td></tr>
+                  ) : filteredReports.length === 0 ? (
+                    <tr><td colSpan="6" className="text-center py-8 text-gray-500">No reports found.</td></tr>
+                  ) : filteredReports.map((rep) => {
+                    const TypeIcon = getTypeIcon(rep.reportType);
+                    const iconColor = getIconColor(rep.reportType);
+                    return (
+                    <tr key={rep._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm font-bold text-blue-600 whitespace-nowrap">
-                        {rep.id}</td>
+                        {rep._id.substring(0, 8).toUpperCase()}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <img src={rep.img} alt={rep.patient} className="w-10 h-10 rounded-full object-cover bg-gray-100" />
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600 font-bold">
+                            {rep.patientName.charAt(0)}
+                          </div>
                           <div>
-                            <p className="text-sm font-bold text-gray-900">{rep.patient}</p>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">PID: {rep.pid}</p></div></div></td>
+                            <p className="text-sm font-bold text-gray-900">{rep.patientName}</p>
+                          </div></div></td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gray-50 shrink-0 border border-gray-100`}>
-                            <rep.typeIcon className={`w-4 h-4 ${rep.iconColor}`} /></div>
+                            <TypeIcon className={`w-4 h-4 ${iconColor}`} /></div>
                           <div>
                             <p className="text-sm font-bold text-gray-900">{rep.reportType}</p>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide">{rep.dept}</p></div></div></td>
+                          </div></div></td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-sm font-bold text-gray-900">{rep.date}</p>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide">{rep.time}</p></td>
+                        <p className="text-sm font-bold text-gray-900">{rep.visitDate}</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wide">{rep.visitTime}</p></td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={rep.status} /></td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-3 text-gray-400">
-                          <button className="hover:text-gray-900 transition-colors"><Eye className="w-4 h-4" /></button>
-                          <button className="hover:text-gray-900 transition-colors">
-                            {rep.status === 'COMPLETED' ? <Download className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}</button>
-                          <button className="hover:text-gray-900 transition-colors"><MoreVertical className="w-4 h-4" /></button></div></td></tr>
-                  ))}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2 text-gray-400">
+                            {rep.status === 'Draft' && (
+                              <button
+                                onClick={() => handlePublish(rep._id)}
+                                title="Publish Report"
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00B9D6] text-white text-[10px] font-bold hover:bg-[#00a3bd] transition-colors"
+                              >
+                                Publish
+                              </button>
+                            )}
+                            <button onClick={() => handlePrint(rep)} title="View/Print" className="hover:text-gray-900 transition-colors"><Eye className="w-4 h-4" /></button>
+                            <button onClick={() => handlePrint(rep)} title="Download" className="hover:text-gray-900 transition-colors">
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === rep._id ? null : rep._id); }}
+                                className="hover:text-gray-900 transition-colors"
+                                title="More options"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                              {menuOpenId === rep._id && (
+                                <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setMenuOpenId(null); navigate(`/doctordashboard/edit-report/${rep._id}`); }}
+                                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5 text-blue-500" /> Edit
+                                  </button>
+                                  {rep.status === 'Draft' && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDelete(rep._id); }}
+                                      className="w-full text-left px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" /> Remove
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div></td></tr>
+                  )})}
                 </tbody></table></div>
-            {/* Pagination */}
-            <div className="flex items-center justify-between py-2">
-              <p className="text-sm text-gray-500 font-medium">Showing 1 to 8 of 248 reports</p>
-              <div className="flex items-center gap-1">
-                <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"><ChevronLeft className="w-4 h-4" /></button>
-                <button className="w-8 h-8 flex items-center justify-center rounded bg-[#0b3363] text-white font-semibold text-sm">1</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold text-sm">2</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold text-sm">3</button>
-                <span className="w-8 h-8 flex items-center justify-center text-gray-400">...</span>
-                <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold text-sm">31</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"><ChevronRight className="w-4 h-4" /></button></div></div></div>
+            </div>
+            
           {/* Sidebar (Right column) */}
           <div className="xl:col-span-1 flex flex-col gap-6">
             {/* Recent Reports */}
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-sm font-bold text-gray-900">Recent Reports</h3>
-                <button className="text-[10px] font-bold text-blue-600 uppercase tracking-wide hover:underline">View All</button></div>
+                </div>
               <div className="flex flex-col gap-5">
-                {recentReports.map(rr => (
-                  <div key={rr.id} className="flex items-start gap-3">
-                    <img src={rr.img} alt={rr.patient} className="w-9 h-9 rounded-full object-cover bg-gray-100 shrink-0" />
+                {reports.slice(0, 3).map(rr => (
+                  <div key={rr._id} className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gray-200 text-gray-600 font-bold shrink-0">
+                      {rr.patientName.charAt(0)}
+                    </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-gray-900 leading-tight">{rr.patient}</p>
-                      <p className="text-[10px] text-gray-500 font-medium mb-1">{rr.type}</p>
+                      <p className="text-sm font-bold text-gray-900 leading-tight">{rr.patientName}</p>
+                      <p className="text-[10px] text-gray-500 font-medium mb-1">{rr.reportType}</p>
                       <div className="flex items-center justify-between">
                         <StatusBadge status={rr.status} />
-                        <span className="text-[9px] font-bold text-gray-400 uppercase">{rr.date}</span></div></div></div>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase">{rr.visitDate}</span></div></div></div>
                 ))}
+                {reports.length === 0 && <p className="text-xs text-gray-400 text-center">No recent reports</p>}
               </div>
-              <button className="mt-5 w-full flex items-center justify-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 py-2">
-                View All Recent Reports <ArrowRight className="w-3.5 h-3.5" /></button></div>
+            </div>
             {/* Quick Actions */}
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
               <h3 className="text-sm font-bold text-gray-900 mb-5">Quick Actions</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Link to="/doctordashboard/create-report" className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-100 rounded-xl gap-2 h-24">
+                <button onClick={() => navigate('/doctordashboard/create-report')} className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-100 rounded-xl gap-2 h-24">
                   <FilePlus className="w-5 h-5 text-blue-600 mb-1" />
-                  <span className="text-[10px] font-bold text-gray-900 text-center leading-tight">Create Report</span></Link>
-                <QuickActionCard icon={UploadCloud} title="Upload Document" />
-                <QuickActionCard icon={Award} title="Medical Certificate" />
-                <QuickActionCard icon={Download} title="Download All" /></div></div></div></div>
-        {/* Footer */}
-        <footer className="mt-12 py-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-            <span className="text-lg">©</span> 2026 AxisCare Medical Systems. All rights reserved.</div>
-          <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
-            <button className="hover:text-gray-900 transition-colors">Privacy Policy</button>
-            <button className="hover:text-gray-900 transition-colors">Terms of Service</button>
-            <button className="hover:text-gray-900 transition-colors">Help Center</button></div></footer></main></div>
+                  <span className="text-[10px] font-bold text-gray-900 text-center leading-tight">Create Report</span></button>
+                <button onClick={() => navigate('/doctordashboard/create-report')} className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-100 rounded-xl gap-2 h-24">
+                  <UploadCloud className="w-5 h-5 text-blue-600 mb-1" />
+                  <span className="text-[10px] font-bold text-gray-900 text-center leading-tight">Upload Document</span></button>
+                <button onClick={() => navigate('/doctordashboard/create-report')} className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-100 rounded-xl gap-2 h-24">
+                  <Award className="w-5 h-5 text-blue-600 mb-1" />
+                  <span className="text-[10px] font-bold text-gray-900 text-center leading-tight">Medical Certificate</span></button>
+              </div></div></div></div>
+        </main></div>
   );
 };
 const StatCard = ({ title, value, subtext, icon: Icon, iconColor, bgColor }) => (
@@ -183,7 +333,8 @@ const StatCard = ({ title, value, subtext, icon: Icon, iconColor, bgColor }) => 
 );
 const StatusBadge = ({ status }) => {
   const getStyles = () => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
+      case 'FINAL':
       case 'COMPLETED':
         return 'bg-green-50 text-green-600';
       case 'DRAFT':
@@ -196,12 +347,7 @@ const StatusBadge = ({ status }) => {
   };
   return (
     <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold tracking-wider uppercase ${getStyles()}`}>
-      {status}</span>
+      {status || 'UNKNOWN'}</span>
   );
 };
-const QuickActionCard = ({ icon: Icon, title }) => (
-  <button className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-100 rounded-xl gap-2 h-24">
-    <Icon className="w-5 h-5 text-blue-600 mb-1" />
-    <span className="text-[10px] font-bold text-gray-900 text-center leading-tight">{title}</span></button>
-);
 export default Reports;

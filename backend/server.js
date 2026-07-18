@@ -20,6 +20,8 @@ import orderRoutes from './routes/pharmacy/orderRoutes.js';
 
 import billRoutes from './routes/PatientBillRoutes.js';
 
+// Laboratory Panel
+import labPanelRoutes from './routes/labPanelRoutes.js';
 
 // Receptionist Panel
 import receptionistRoutes from "./routes/receptionistRoutes.js";
@@ -83,6 +85,9 @@ app.use('/api/bills', billRoutes);
 // ================= Receptionist =================
 app.use("/api/receptionist", receptionistRoutes);
 
+// ================= Laboratory =================
+app.use("/api/laboratory", labPanelRoutes);
+
 // ================= Pharmacy =================
 app.use("/api/pharmacy/dashboard", pharmacyDashboardRoutes);
 app.use("/api/pharmacy/medicines", pharmacyMedicineRoutes);
@@ -93,8 +98,8 @@ app.use("/api/pharmacy/prescriptions", pharmacyPrescriptionRoutes);
 app.use("/api/pharmacy/notifications", pharmacyNotificationRoutes);
 app.use("/api/pharmacy/reports", pharmacyReportsRoutes);
 
-// Fallback for patient pharmacy routes (must be after specific pharmacy routes)
 app.use('/api/pharmacy', orderRoutes);
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

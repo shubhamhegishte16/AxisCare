@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import { 
   Bell, 
@@ -13,18 +13,85 @@ import {
   FileBarChart,
   AlertTriangle
 } from 'lucide-react';
-const notificationsData = [
-  { id: 1, type: 'APPOINTMENT', icon: Calendar, iconColor: 'text-blue-500', bgColor: 'bg-blue-50', title: 'New Appointment Booked', desc: 'Rahul Mehta has booked an appointment on 24 May 2025 at 10:30 AM.', time: '2 min ago', unread: true, badgeColor: 'bg-blue-50 text-blue-600' },
-  { id: 2, type: 'LAB & REPORTS', icon: FlaskConical, iconColor: 'text-green-500', bgColor: 'bg-green-50', title: 'Lab Report Ready', desc: 'Lab report for Amit Kumar is ready to view.', time: '15 min ago', unread: true, badgeColor: 'bg-green-50 text-green-600' },
-  { id: 3, type: 'PRESCRIPTIONS', icon: FileText, iconColor: 'text-orange-500', bgColor: 'bg-orange-50', title: 'New Prescription Added', desc: 'You have added a new prescription for Neha Sharma.', time: '1 hour ago', unread: true, badgeColor: 'bg-orange-50 text-orange-500' },
-  { id: 4, type: 'PATIENTS', icon: User, iconColor: 'text-indigo-500', bgColor: 'bg-indigo-50', title: 'Patient Update', desc: 'Patient Priya Singh has updated her medical history.', time: '2 hours ago', unread: false, badgeColor: 'bg-indigo-50 text-indigo-600' },
-  { id: 5, type: 'LAB REQUESTS', icon: ClipboardList, iconColor: 'text-cyan-500', bgColor: 'bg-cyan-50', title: 'Lab Request Received', desc: 'New lab request for Vikram Patel has been received.', time: '3 hours ago', unread: false, badgeColor: 'bg-cyan-50 text-cyan-600' },
-  { id: 6, type: 'SYSTEM', icon: Settings, iconColor: 'text-gray-500', bgColor: 'bg-gray-100', title: 'System Maintenance Scheduled', desc: 'System maintenance is scheduled on 25 May 2025 from 01:00 AM to 03:00 AM.', time: '1 day ago', unread: false, badgeColor: 'bg-gray-100 text-gray-600' },
-  { id: 7, type: 'REPORTS', icon: FileBarChart, iconColor: 'text-emerald-500', bgColor: 'bg-emerald-50', title: 'Report Generated', desc: 'Monthly patient visit report for April 2025 is ready.', time: '2 days ago', unread: false, badgeColor: 'bg-emerald-50 text-emerald-600' },
-  { id: 8, type: 'SYSTEM', icon: AlertTriangle, iconColor: 'text-red-500', bgColor: 'bg-red-50', title: 'Critical Alert', desc: 'High priority: Patient Arjun Verma has abnormal ECG results.', time: '2 days ago', unread: false, badgeColor: 'bg-red-50 text-red-600' },
-];
+import { doctorService } from '../services/doctorService';
+import { formatDistanceToNow } from 'date-fns';
+
+const getNotificationIcon = (type) => {
+  switch (type?.toUpperCase()) {
+    case 'APPOINTMENTS': return Calendar;
+    case 'LABREPORT':
+    case 'LAB & REPORTS': return FlaskConical;
+    case 'PRESCRIPTION':
+    case 'PRESCRIPTIONS': return FileText;
+    case 'PATIENT':
+    case 'PATIENTS': return User;
+    case 'SYSTEM': return Settings;
+    case 'MEDICAL': return ClipboardList;
+    case 'ALERT': return AlertTriangle;
+    default: return Bell;
+  }
+};
+
+const getNotificationColors = (type) => {
+  switch (type?.toUpperCase()) {
+    case 'APPOINTMENTS': return { iconColor: 'text-blue-500', bgColor: 'bg-blue-50', badgeColor: 'bg-blue-50 text-blue-600' };
+    case 'LABREPORT':
+    case 'LAB & REPORTS': return { iconColor: 'text-green-500', bgColor: 'bg-green-50', badgeColor: 'bg-green-50 text-green-600' };
+    case 'PRESCRIPTION':
+    case 'PRESCRIPTIONS': return { iconColor: 'text-orange-500', bgColor: 'bg-orange-50', badgeColor: 'bg-orange-50 text-orange-500' };
+    case 'PATIENT':
+    case 'PATIENTS': return { iconColor: 'text-indigo-500', bgColor: 'bg-indigo-50', badgeColor: 'bg-indigo-50 text-indigo-600' };
+    case 'MEDICAL': return { iconColor: 'text-cyan-500', bgColor: 'bg-cyan-50', badgeColor: 'bg-cyan-50 text-cyan-600' };
+    case 'SYSTEM': return { iconColor: 'text-gray-500', bgColor: 'bg-gray-100', badgeColor: 'bg-gray-100 text-gray-600' };
+    case 'ALERT': return { iconColor: 'text-red-500', bgColor: 'bg-red-50', badgeColor: 'bg-red-50 text-red-600' };
+    default: return { iconColor: 'text-gray-500', bgColor: 'bg-gray-100', badgeColor: 'bg-gray-100 text-gray-600' };
+  }
+};
+
 const Notifications = () => {
   const [activeTab, setActiveTab] = useState('All');
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const res = await doctorService.getNotifications();
+      if (res.success) {
+        setNotifications(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await doctorService.markAllNotificationsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const filteredNotifications = notifications.filter(n => {
+    if (activeTab === 'All') return true;
+    if (activeTab === 'Unread') return !n.read;
+    return n.type === activeTab;
+  });
+
+  const getUnreadCount = (type) => {
+    if (type === 'All') return notifications.length;
+    if (type === 'Unread') return notifications.filter(n => !n.read).length;
+    return notifications.filter(n => n.type === type).length;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <Header />
@@ -37,34 +104,44 @@ const Notifications = () => {
           {/* Tabs & Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 mb-6 gap-4">
             <div className="flex items-center gap-6 overflow-x-auto hide-scrollbar pb-2 sm:pb-0">
-              <TabButton active={activeTab === 'All'} onClick={() => setActiveTab('All')} icon={Bell} label="All" count={8} />
-              <TabButton active={activeTab === 'Unread'} onClick={() => setActiveTab('Unread')} icon={Mail} label="Unread" count={5} />
-              <TabButton active={activeTab === 'Appointments'} onClick={() => setActiveTab('Appointments')} icon={Calendar} label="Appointments" count={3} />
-              <TabButton active={activeTab === 'Lab & Reports'} onClick={() => setActiveTab('Lab & Reports')} icon={FlaskConical} label="Lab & Reports" count={2} />
-              <TabButton active={activeTab === 'System'} onClick={() => setActiveTab('System')} icon={Settings} label="System" count={1} /></div>
-            <button className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 whitespace-nowrap pb-2 sm:pb-0">
+              <TabButton active={activeTab === 'All'} onClick={() => setActiveTab('All')} icon={Bell} label="All" count={getUnreadCount('All')} />
+              <TabButton active={activeTab === 'Unread'} onClick={() => setActiveTab('Unread')} icon={Mail} label="Unread" count={getUnreadCount('Unread')} />
+              <TabButton active={activeTab === 'Appointments'} onClick={() => setActiveTab('Appointments')} icon={Calendar} label="Appointments" count={getUnreadCount('Appointments')} />
+              <TabButton active={activeTab === 'LabReport'} onClick={() => setActiveTab('LabReport')} icon={FlaskConical} label="Lab & Reports" count={getUnreadCount('LabReport')} />
+              <TabButton active={activeTab === 'System'} onClick={() => setActiveTab('System')} icon={Settings} label="System" count={getUnreadCount('System')} /></div>
+            <button onClick={handleMarkAllRead} className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 whitespace-nowrap pb-2 sm:pb-0">
               <CheckCircle2 className="w-3.5 h-3.5" /> Mark all as read</button></div>
           {/* Notification List */}
           <div className="flex flex-col gap-4">
-            {notificationsData.map((notif) => (
-              <div key={notif.id} className="border border-gray-100 rounded-xl p-5 flex items-start gap-4 hover:border-gray-200 transition-colors bg-white">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notif.bgColor}`}>
-                  <notif.icon className={`w-5 h-5 ${notif.iconColor}`} /></div>
+            {loading ? (
+               <p className="text-center text-gray-500 py-8">Loading notifications...</p>
+            ) : filteredNotifications.length === 0 ? (
+               <p className="text-center text-gray-500 py-8">No notifications found.</p>
+            ) : filteredNotifications.map((notif) => {
+              const Icon = getNotificationIcon(notif.type);
+              const colors = getNotificationColors(notif.type);
+              
+              return (
+              <div key={notif._id} className="border border-gray-100 rounded-xl p-5 flex items-start gap-4 hover:border-gray-200 transition-colors bg-white">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${colors.bgColor}`}>
+                  <Icon className={`w-5 h-5 ${colors.iconColor}`} /></div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-1">
                     <h3 className="text-sm font-bold text-gray-900 truncate pr-4">{notif.title}</h3>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-bold text-gray-400">{notif.time}</span>
-                      {notif.unread ? (
+                      <span className="text-[10px] font-bold text-gray-400">
+                        {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+                      </span>
+                      {!notif.read ? (
                         <div className="w-2 h-2 rounded-full bg-blue-600"></div>
                       ) : (
                         <div className="w-2 h-2 rounded-full bg-gray-200"></div>
                       )}
                     </div></div>
-                  <p className="text-xs text-gray-600 mb-3 leading-relaxed">{notif.desc}</p>
-                  <span className={`inline-block px-2 py-0.5 rounded text-[8px] font-extrabold tracking-wider uppercase ${notif.badgeColor}`}>
+                  <p className="text-xs text-gray-600 mb-3 leading-relaxed">{notif.message}</p>
+                  <span className={`inline-block px-2 py-0.5 rounded text-[8px] font-extrabold tracking-wider uppercase ${colors.badgeColor}`}>
                     {notif.type}</span></div></div>
-            ))}
+            )})}
           </div></div></main></div>
   );
 };

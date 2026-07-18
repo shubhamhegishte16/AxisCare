@@ -71,6 +71,7 @@ import LabRequests from './laboratory_panel/LabRequests';
 import LabResults from './laboratory_panel/LabResults';
 import LabHistory from './laboratory_panel/LabHistory';
 import LabSettings from './laboratory_panel/LabSettings';
+import ProcessTest from './laboratory_panel/ProcessTest';
 
 function App() {
   return (
@@ -92,6 +93,7 @@ function App() {
         <Route path="/doctordashboard/settings" element={<DoctorSettings />} />
         <Route path="/doctordashboard/reports" element={<Reports />} />
         <Route path="/doctordashboard/create-report" element={<CreateReport />} />
+        <Route path="/doctordashboard/edit-report/:id" element={<CreateReport />} />
         <Route path="/doctordashboard/notifications" element={<Notifications />} />
 
         {/* Patient Panel */}
@@ -158,6 +160,7 @@ function App() {
         <Route path="/lab" element={<LabDashboard />} />
         <Route path="/lab/dashboard" element={<Navigate to="/lab" replace />} />
         <Route path="/lab/requests" element={<LabRequests />} />
+        <Route path="/lab/requests/:id/process" element={<ProcessTest />} />
         <Route path="/lab/results" element={<LabResults />} />
         <Route path="/lab/history" element={<LabHistory />} />
         <Route path="/lab/settings" element={<LabSettings />} />
