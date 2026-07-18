@@ -24,10 +24,19 @@ const orderItemSchema = new mongoose.Schema({
     default: 0,
     min: 0,
   },
+  medicineId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Medicine",
+    default: null,
+  },
 });
 
 const orderSchema = new mongoose.Schema(
   {
+    orderId: {
+      type: String,
+      unique: true,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -47,7 +56,10 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    items: [orderItemSchema],
+    items: {
+      type: [orderItemSchema],
+      default: [],
+    },
     supplier: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Supplier",
@@ -62,6 +74,11 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ["Pending", "Processing", "Completed", "Cancelled"],
       default: "Pending",
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['Pending', 'Paid', 'Refunded'],
+      default: 'Pending',
     },
     orderDate: {
       type: Date,
@@ -80,10 +97,26 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Generate order ID before saving
+orderSchema.pre('save', async function (next) {
+  try {
+    if (this.isNew && !this.orderId) {
+      const Order = mongoose.model('Order');
+      const count = await Order.countDocuments();
+      this.orderId = `ORD-${String(count + 1).padStart(5, '0')}`;
+      // console.log(`Generated order ID: ${this.orderId}`);
+    }
+  } catch (error) {
+    console.error('Error generating order ID:', error);
+    // Fallback: use timestamp
+    this.orderId = `ORD-${Date.now()}`;
+  }
+});
+
+// Remove duplicate index - only keep one
 orderSchema.index({ userId: 1 });
 orderSchema.index({ prescriptionId: 1 });
 orderSchema.index({ status: 1 });
-orderSchema.index({ orderDate: -1 });
 
 const Order = mongoose.model("Order", orderSchema);
 export default Order;

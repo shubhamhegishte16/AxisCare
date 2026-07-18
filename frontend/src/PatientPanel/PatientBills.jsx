@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     SquarePlus,
     Bell,
@@ -6,56 +6,70 @@ import {
     ChevronDown,
     Search,
     Menu,
-    X
+    X,
+    Loader2,
+    Eye,
+    CreditCard,
+    Download,
+    CheckCircle,
+    AlertCircle
 } from 'lucide-react';
+import { FileText } from 'lucide-react'; 
 import Navbar from './Navbar.jsx';
+import { billService } from '../services/PatientBillService.js';
 
 export default function PatientBills() {
     const [activeTab, setActiveTab] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    // Dynamic dashboard summary card statistics directly from the image
-    const cardStats = [
-        {
-            title: 'Total Medical Expenses',
-            value: 'Rs. 25,458',
-            titleColor: '#00A3C4',
-            valueColor: '#065AD8'
-        },
-        {
-            title: 'Pending Payments',
-            value: 'Rs. 2,500',
-            titleColor: '#D32F2F',
-            valueColor: '#D32F2F'
-        },
-        {
-            title: 'Paid Bills',
-            value: '18 Bills',
-            titleColor: '#2E7D32',
-            valueColor: '#2E7D32'
-        },
-        {
-            title: 'Insurance Covered',
-            value: 'Rs. 8,000',
-            titleColor: '#00A3C4',
-            valueColor: '#00A3C4'
-        }
-    ];
-
-    // Raw dataset representing rows inside the document table
-    const billsData = [
-        { id: '#INV-1245', date: '12 July 2026', category: 'Consultation', department: 'Cardiology', amount: 'Rs. 500', status: 'Paid' },
-        { id: '#INV-1245', date: '12 July 2026', category: 'Laboratory', department: 'Pharmacist', amount: 'Rs. 1200', status: 'Unpaid' },
-        { id: '#INV-1245', date: '12 July 2026', category: 'Medicines', department: 'Pharmacist', amount: 'Rs. 1200', status: 'Unpaid' },
-        { id: '#INV-1245', date: '12 July 2026', category: 'Medicines', department: 'Cardiology', amount: 'Rs. 500', status: 'Paid' },
-        { id: '#INV-1245', date: '12 July 2026', category: 'Laboratory', department: 'Cardiology', amount: 'Rs. 500', status: 'Paid' }
-    ];
+    const [bills, setBills] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [actionLoading, setActionLoading] = useState(null);
+    const [notification, setNotification] = useState({ type: '', message: '' });
 
     const tabs = ['All', 'Consultation', 'Laboratory', 'Medicines', 'Unpaid'];
 
-    // Filter items dynamically based on active tab select state & search query input string
-    const filteredBills = billsData.filter(bill => {
+    useEffect(() => {
+        fetchBills();
+        fetchStats();
+    }, []);
+
+    const fetchBills = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await billService.getMyBills();
+            if (response.success) {
+                setBills(response.data);
+            }
+        } catch (error) {
+            console.error('Error fetching bills:', error);
+            setError(error.message || 'Failed to load bills');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchStats = async () => {
+        try {
+            const response = await billService.getBillStats();
+            if (response.success) {
+                setStats(response.data);
+            }
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    };
+
+    const showNotification = (type, message) => {
+        setNotification({ type, message });
+        setTimeout(() => setNotification({ type: '', message: '' }), 5000);
+    };
+
+    // Filter bills based on tab and search
+    const filteredBills = bills.filter(bill => {
         const matchesTab = activeTab === 'All'
             ? true
             : activeTab === 'Unpaid'
@@ -63,20 +77,134 @@ export default function PatientBills() {
                 : bill.category === activeTab;
 
         const matchesSearch =
-            bill.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            bill.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            bill.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            bill.id.toLowerCase().includes(searchQuery.toLowerCase());
+            bill.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            bill.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            bill.status?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            bill.billId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            bill.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase());
 
         return matchesTab && matchesSearch;
     });
+
+    const handlePayBill = async (billId) => {
+        try {
+            setActionLoading(billId);
+            const response = await billService.payBill(billId, 'Cash');
+            if (response.success) {
+                showNotification('success', 'Bill paid successfully!');
+                await fetchBills();
+                await fetchStats();
+            }
+        } catch (error) {
+            console.error('Error paying bill:', error);
+            showNotification('error', error.message || 'Failed to pay bill');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleViewBill = async (billId) => {
+        try {
+            const response = await billService.getBillDetails(billId);
+            if (response.success) {
+                const bill = response.data;
+                const items = bill.items.map(item => 
+                    `${item.medicineName} x${item.quantity} = ₹${item.total.toFixed(2)}`
+                ).join('\n');
+                alert(
+                    `Bill Details:\n\n` +
+                    `Bill ID: ${bill.billId}\n` +
+                    `Date: ${new Date(bill.createdAt).toLocaleDateString()}\n` +
+                    `Amount: ₹${bill.totalAmount.toFixed(2)}\n` +
+                    `Status: ${bill.paymentStatus}\n\n` +
+                    `Items:\n${items}`
+                );
+            }
+        } catch (error) {
+            console.error('Error viewing bill:', error);
+            showNotification('error', 'Failed to load bill details');
+        }
+    };
+
+    const handleDownloadBill = async (billId) => {
+        try {
+            const blob = await billService.downloadBill(billId);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Bill-${billId}.pdf`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showNotification('success', 'Bill downloaded successfully!');
+        } catch (error) {
+            console.error('Error downloading bill:', error);
+            showNotification('error', 'Failed to download bill');
+        }
+    };
+
+    // Card stats from backend
+    const cardStats = [
+        {
+            title: 'Total Medical Expenses',
+            value: stats ? `Rs. ${stats.totalMedicalExpenses?.toFixed(0) || 0}` : 'Rs. 0',
+            titleColor: '#00A3C4',
+            valueColor: '#065AD8'
+        },
+        {
+            title: 'Pending Payments',
+            value: stats ? `Rs. ${stats.pendingPayments?.toFixed(0) || 0}` : 'Rs. 0',
+            titleColor: '#D32F2F',
+            valueColor: '#D32F2F'
+        },
+        {
+            title: 'Paid Bills',
+            value: stats ? `${stats.paidBills || 0} Bills` : '0 Bills',
+            titleColor: '#2E7D32',
+            valueColor: '#2E7D32'
+        },
+        {
+            title: 'Insurance Covered',
+            value: stats ? `Rs. ${stats.insuranceCovered?.toFixed(0) || 0}` : 'Rs. 0',
+            titleColor: '#00A3C4',
+            valueColor: '#00A3C4'
+        }
+    ];
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#F0F6FA]">
+                <Navbar />
+                <div className="flex items-center justify-center h-[80vh]">
+                    <div className="text-center">
+                        <Loader2 className="w-12 h-12 text-[#00b4d8] animate-spin mx-auto mb-4" />
+                        <p className="text-gray-600">Loading your bills...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen w-full bg-[#F0F6FA] font-sans antialiased flex flex-col">
 
             <Navbar />
 
-            {/* 2. Main Content Layout Container */}
+            {/* Notification */}
+            {notification.message && (
+                <div className={`fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-3 ${
+                    notification.type === 'success' 
+                        ? 'bg-green-50 text-green-800 border border-green-200' 
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                    {notification.type === 'success' ? (
+                        <CheckCircle className="w-5 h-5" />
+                    ) : (
+                        <AlertCircle className="w-5 h-5" />
+                    )}
+                    <span className="font-medium">{notification.message}</span>
+                </div>
+            )}
+
             <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-6 sm:py-8 flex flex-col justify-between">
 
                 <div className="flex-1">
@@ -101,7 +229,7 @@ export default function PatientBills() {
                         ))}
                     </div>
 
-                    {/* 3. Search Bar Filter Mechanism Container */}
+                    {/* Search Bar Filter Mechanism Container */}
                     <div className="bg-white rounded-lg border border-gray-300 px-4 py-2.5 flex items-center space-x-3 mb-6 shadow-sm max-w-full">
                         <Search className="w-5 h-5 text-gray-400 shrink-0" />
                         <input
@@ -113,88 +241,121 @@ export default function PatientBills() {
                         />
                     </div>
 
-                    {/* 4. Categorized Filtering Navigation Items */}
+                    {/* Categorized Filtering Navigation Items */}
                     <div className="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-3 mb-6 scrollbar-none w-full">
                         {tabs.map((tab) => {
                             const isActive = activeTab === tab;
+                            const count = tab === 'All' ? bills.length :
+                                        tab === 'Unpaid' ? bills.filter(b => b.status === 'Unpaid').length :
+                                        bills.filter(b => b.category === tab).length;
                             return (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-6 py-2 rounded-xl font-bold text-xs sm:text-sm border whitespace-nowrap transition-all ${isActive
+                                    className={`px-6 py-2 rounded-xl font-bold text-xs sm:text-sm border whitespace-nowrap transition-all flex items-center gap-2 ${
+                                        isActive
                                             ? 'bg-[#00B4D8] text-white border-[#00B4D8]'
                                             : 'bg-white text-[#00B4D8] border-gray-200 hover:bg-gray-50'
-                                        }`}
+                                    }`}
                                 >
                                     {tab}
+                                    {count > 0 && (
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                            isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
+                                        }`}>
+                                            {count}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
                     </div>
 
-                    {/* 5. Accounts/Invoices Structured Data Grid/Table Layout */}
+                    {/* Accounts/Invoices Structured Data Grid/Table Layout */}
                     <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden w-full mb-8">
-                        <div className="w-full overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[850px] lg:min-w-0">
-                                <thead>
-                                    <tr className="bg-[#0487BD] text-white text-center font-bold text-xs sm:text-sm">
-                                        <th className="py-4 px-6">Invoice ID</th>
-                                        <th className="py-4 px-6">Bill date</th>
-                                        <th className="py-4 px-6">Category</th>
-                                        <th className="py-4 px-6">Department</th>
-                                        <th className="py-4 px-6">Amount</th>
-                                        <th className="py-4 px-6 text-center">Status</th>
-                                        <th className="py-4 px-6 text-center">View Receipt</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#BCE1EC]">
-                                    {filteredBills.length > 0 ? (
-                                        filteredBills.map((bill, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50 text-center transition-colors text-sm sm:text-base">
+                        {filteredBills.length === 0 ? (
+                            <div className="text-center py-12">
+                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FileText className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <p className="text-gray-500 text-lg">No bills found</p>
+                                <p className="text-gray-400 text-sm mt-2">No bills match your current filters</p>
+                            </div>
+                        ) : (
+                            <div className="w-full overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[850px] lg:min-w-0">
+                                    <thead>
+                                        <tr className="bg-[#0487BD] text-white text-center font-bold text-xs sm:text-sm">
+                                            <th className="py-4 px-6">Invoice ID</th>
+                                            <th className="py-4 px-6">Bill date</th>
+                                            <th className="py-4 px-6">Category</th>
+                                            <th className="py-4 px-6">Department</th>
+                                            <th className="py-4 px-6">Amount</th>
+                                            <th className="py-4 px-6 text-center">Status</th>
+                                            <th className="py-4 px-6 text-center" colSpan="2">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#BCE1EC]">
+                                        {filteredBills.map((bill, idx) => (
+                                            <tr key={bill._id || idx} className="hover:bg-slate-50 text-center transition-colors text-sm sm:text-base">
                                                 <td className="py-5 px-6 font-bold text-gray-800 whitespace-nowrap">
-                                                    {bill.id}
+                                                    {bill.billId || bill.invoiceId || 'N/A'}
                                                 </td>
                                                 <td className="py-5 px-6 font-semibold text-gray-700 whitespace-nowrap">
-                                                    {bill.date}
+                                                    {bill.date || 'N/A'}
                                                 </td>
                                                 <td className="py-5 px-6 font-bold text-gray-800">
-                                                    {bill.category}
+                                                    {bill.category || 'Other'}
                                                 </td>
                                                 <td className="py-5 px-6 font-bold text-gray-800">
-                                                    {bill.department}
+                                                    {bill.department || 'General'}
                                                 </td>
                                                 <td className="py-5 px-6 font-bold text-gray-800 whitespace-nowrap">
-                                                    {bill.amount}
+                                                    {bill.amount || `Rs. ${bill.amountRaw?.toFixed(2) || 0}`}
                                                 </td>
                                                 <td className="py-5 px-6 text-center whitespace-nowrap">
-                                                    <span className={`font-bold text-sm ${bill.status === 'Paid' ? 'text-[#2E7D32]' : 'text-[#D32F2F]'
-                                                        }`}>
-                                                        {bill.status}
+                                                    <span className={`font-bold text-sm ${bill.status === 'Paid' ? 'text-[#2E7D32]' : 'text-[#D32F2F]'}`}>
+                                                        {bill.status || 'Unpaid'}
                                                     </span>
                                                 </td>
                                                 <td className="py-5 px-6 text-center whitespace-nowrap">
+                                                    <button 
+                                                        onClick={() => handleViewBill(bill._id)}
+                                                        className="bg-[#00B4D8] hover:bg-[#0096B4] text-white font-bold text-xs sm:text-sm py-1.5 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-1 mx-auto"
+                                                    >
+                                                        <Eye className="w-3 h-3" />
+                                                        <span>View</span>
+                                                    </button>
+                                                </td>
+                                                <td className="py-5 px-6 text-center whitespace-nowrap">
                                                     {bill.status === 'Paid' ? (
-                                                        <button className="bg-[#00B4D8] hover:bg-[#0096B4] text-white font-bold text-xs sm:text-sm py-1.5 px-6 rounded-lg shadow-sm transition-colors min-w-[80px]">
-                                                            View
+                                                        <button 
+                                                            onClick={() => handleDownloadBill(bill._id)}
+                                                            className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs sm:text-sm py-1.5 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-1 mx-auto"
+                                                        >
+                                                            <Download className="w-3 h-3" />
+                                                            <span>Download</span>
                                                         </button>
                                                     ) : (
-                                                        <button className="bg-[#1B5E20] hover:bg-[#123C15] text-white font-bold text-xs sm:text-sm py-1.5 px-6 rounded-lg shadow-sm transition-colors min-w-[80px]">
-                                                            Pay
+                                                        <button 
+                                                            onClick={() => handlePayBill(bill._id)}
+                                                            disabled={actionLoading === bill._id}
+                                                            className="bg-[#1B5E20] hover:bg-[#123C15] text-white font-bold text-xs sm:text-sm py-1.5 px-6 rounded-lg shadow-sm transition-colors min-w-[80px] disabled:opacity-50"
+                                                        >
+                                                            {actionLoading === bill._id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                                            ) : (
+                                                                'Pay'
+                                                            )}
                                                         </button>
                                                     )}
                                                 </td>
                                             </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="7" className="py-10 text-center text-sm font-medium text-gray-400">
-                                                No invoices found matching your criteria.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

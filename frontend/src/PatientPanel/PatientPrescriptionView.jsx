@@ -187,11 +187,10 @@ export default function PatientPrescriptionView() {
     printWindow.document.close();
   };
 
-  const handlePurchaseMedicines = async (prescription) => {
-    setSelectedPrescription(prescription);
-    setSelectedMedicines(prescription.medicines || []);
-    setShowPurchaseModal(true);
-  };
+    const handlePurchaseMedicines = (prescription) => {
+        setSelectedPrescriptionForPurchase(prescription);
+        setIsPurchaseModalOpen(true);
+    };
 
   const handleConfirmPurchase = async () => {
     try {
