@@ -6,7 +6,7 @@ import {
     CheckCircle2, Heart, Activity, Droplets, TrendingUp,
     Siren, Pill, Loader2, AlertCircle, Bell, User, CreditCard
 } from 'lucide-react';
-import { dashboardService } from '../services/dashboardService.js';
+import { dashboardService } from '../services/dashBoardService.js';
 
 export default function PatientDashboard() {
     const navigate = useNavigate();

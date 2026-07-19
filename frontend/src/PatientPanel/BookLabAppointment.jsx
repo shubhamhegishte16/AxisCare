@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Calendar, Clock, MapPin, Stethoscope, User, Phone, Mail, AlertCircle, Plus, Minus, CheckCircle } from 'lucide-react';
-import { labAppointmentService } from '../services/labAppointmentService';
+import { labAppointmentService } from '../services/LabAppointmentService';
 
 export default function BookLabAppointment({ isOpen, onClose, prescription, onSuccess }) {
   const [loading, setLoading] = useState(false);
