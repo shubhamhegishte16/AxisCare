@@ -10,10 +10,7 @@ import {
 } from 'recharts';
 import AdminLayout from './AdminLayout';
 import { StatCard, Card, StatusBadge, RoleBadge } from './UI';
-import {
-  dashboardStats, userGrowth, roleDistribution, departmentLoad,
-  recentActivity, pendingApprovalsList,
-} from './mockData';
+
 
 const quickActions = [
   { label: 'Add User', icon: UserPlus, path: '/admin/users' },

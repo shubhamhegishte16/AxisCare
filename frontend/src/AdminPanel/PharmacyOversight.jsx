@@ -2,7 +2,6 @@ import React from 'react';
 import { Package, AlertTriangle, ClipboardList, IndianRupee } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card } from './UI';
-import { pharmacySnapshot } from './mockData';
 
 const AdminPharmacyOversight = () => (
   <AdminLayout>

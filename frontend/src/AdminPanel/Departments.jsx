@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Plus, Pencil, Trash2, Building2, Stethoscope, Users } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card, Modal, ConfirmDialog, StatusBadge, EmptyState } from './UI';
-import { departments as mockDepartments } from './mockData';
 
 const emptyForm = { name: '', head: '' };
 

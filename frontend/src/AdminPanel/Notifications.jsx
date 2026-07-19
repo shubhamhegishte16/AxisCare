@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Bell, ShieldAlert, AlertTriangle, FileBarChart, Settings2, CheckCheck } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, Card, EmptyState } from './UI';
-import { notifications as mockNotifications } from './mockData';
 
 const iconFor = (type) => {
   switch (type) {

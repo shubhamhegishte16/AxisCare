@@ -5,7 +5,6 @@ import {
 } from 'recharts';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card } from './UI';
-import { revenueByMonth } from './mockData';
 
 const AdminBilling = () => {
   const latest = revenueByMonth[revenueByMonth.length - 1];

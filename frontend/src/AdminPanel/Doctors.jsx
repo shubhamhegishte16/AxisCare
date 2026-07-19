@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Search, Plus, Eye, Star, Stethoscope, UserCheck, UserMinus } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card, Modal, StatusBadge, EmptyState } from './UI';
-import { doctors as mockDoctors } from './mockData';
 
 const emptyForm = { name: '', specialization: '', department: '', experience: '' };
 

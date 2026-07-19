@@ -39,6 +39,19 @@ import pharmacyPrescriptionRoutes from "./routes/pharmacy/prescriptionRoutes.js"
 import pharmacyNotificationRoutes from "./routes/pharmacy/notificationRoutes.js";
 import pharmacyReportsRoutes from "./routes/pharmacy/reportsRoutes.js";
 
+// Admin Panel
+import adminDashboardRoutes from './routes/admin/dashboardRoutes.js';
+import adminUserRoutes from './routes/admin/userRoutes.js';
+import adminDoctorRoutes from './routes/admin/doctorRoutes.js';
+import adminPatientRoutes from './routes/admin/patientRoutes.js';
+import adminAppointmentRoutes from './routes/admin/appointmentRoutes.js';
+import adminDepartmentRoutes from './routes/admin/departmentRoutes.js';
+import adminPharmacyRoutes from './routes/admin/pharmacyRoutes.js';
+import adminBillingRoutes from './routes/admin/billingRoutes.js';
+import adminReportsRoutes from './routes/admin/reportsRoutes.js';
+import adminNotificationRoutes from './routes/admin/notificationRoutes.js';
+
+
 dotenv.config();
 
 connectDB();
@@ -102,6 +115,18 @@ app.use("/api/pharmacy/billing", pharmacyBillingRoutes);
 app.use("/api/pharmacy/prescriptions", pharmacyPrescriptionRoutes);
 app.use("/api/pharmacy/notifications", pharmacyNotificationRoutes);
 app.use("/api/pharmacy/reports", pharmacyReportsRoutes);
+
+// ================= Pharmacy =================
+app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/admin/doctors", adminDoctorRoutes);
+app.use("/api/admin/patients", adminPatientRoutes);
+app.use("/api/admin/appointments", adminAppointmentRoutes);
+app.use("/api/admin/departments", adminDepartmentRoutes);
+app.use("/api/admin/pharmacy", adminPharmacyRoutes);
+app.use("/api/admin/billing", adminBillingRoutes);
+app.use("/api/admin/reports", adminReportsRoutes);
+app.use("/api/admin/notifications", adminNotificationRoutes);
 
 app.use('/api/pharmacy', orderRoutes);
 

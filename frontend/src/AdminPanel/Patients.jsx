@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Search, Eye, HeartPulse, CalendarCheck, UserPlus2 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card, Modal, EmptyState } from './UI';
-import { patients as mockPatients } from './mockData';
 
 const AdminPatients = () => {
   const [patients] = useState(mockPatients);

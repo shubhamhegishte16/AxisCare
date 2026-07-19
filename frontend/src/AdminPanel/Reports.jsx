@@ -6,7 +6,6 @@ import {
 } from 'recharts';
 import AdminLayout from './AdminLayout';
 import { PageHeader, Card } from './UI';
-import { userGrowth, roleDistribution, departmentLoad, revenueByMonth } from './mockData';
 
 const AdminReports = () => (
   <AdminLayout>

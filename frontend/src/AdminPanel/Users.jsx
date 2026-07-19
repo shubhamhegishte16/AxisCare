@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { Search, Plus, Trash2, Pencil, ShieldOff, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card, Modal, ConfirmDialog, EmptyState, RoleBadge, StatusBadge } from './UI';
-import { users as mockUsers } from './mockData';
 import { Users as UsersIcon, UserCheck, UserX, UserPlus } from 'lucide-react';
 
 const roles = ['All', 'admin', 'doctor', 'receptionist', 'patient', 'laboratory', 'pharmacist'];

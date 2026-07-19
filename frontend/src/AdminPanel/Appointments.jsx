@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Search, CalendarDays, CalendarCheck, Clock, XCircle } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card, StatusBadge, EmptyState } from './UI';
-import { appointments as mockAppointments } from './mockData';
 
 const statuses = ['All', 'Pending', 'Scheduled', 'Completed', 'Cancelled'];
 
