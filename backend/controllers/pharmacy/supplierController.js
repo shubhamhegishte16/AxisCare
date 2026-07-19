@@ -1,6 +1,6 @@
 import Supplier from "../../models/PharmacyPanel/Supplier.js";
 import Medicine from "../../models/PharmacyPanel/Medicine.js";
-import PurchaseOrder from "../../models/PharmacyPanel/PurchaseOrder.js";
+import PurchaseOrder from "../../models/PharmacyPanel/Purchaseorder.js";
 
 const generateSupplierId = (doc) => `SUP-${String(doc._id).slice(-6).toUpperCase()}`;
 

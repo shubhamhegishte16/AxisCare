@@ -1,4 +1,4 @@
-import PurchaseOrder from "../../models/PharmacyPanel/PurchaseOrder.js";
+import PurchaseOrder from "../../models/PharmacyPanel/Purchaseorder.js";
 import Supplier from "../../models/PharmacyPanel/Supplier.js";
 import Medicine from "../../models/PharmacyPanel/Medicine.js";
 import Notification from "../../models/PharmacyPanel/Notification.js";
