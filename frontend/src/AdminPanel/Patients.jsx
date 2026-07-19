@@ -1,34 +1,51 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Search, Eye, HeartPulse, CalendarCheck, UserPlus2 } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card, Modal, EmptyState } from './UI';
+import { adminService } from '../services/adminService';
 
 const AdminPatients = () => {
-  const [patients] = useState(mockPatients);
+  const [patients, setPatients] = useState([]);
+  const [stats, setStats] = useState({ total: 0, totalVisits: 0, newThisMonth: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [viewItem, setViewItem] = useState(null);
 
-  const filtered = patients.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.email.toLowerCase().includes(search.toLowerCase()) ||
-      p.id.toLowerCase().includes(search.toLowerCase())
-  );
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [patientsRes, statsRes] = await Promise.all([
+        adminService.getPatients({ search: search || undefined }),
+        adminService.getPatientStats(),
+      ]);
+      if (patientsRes.success) setPatients(patientsRes.data);
+      if (statsRes.success) setStats(statsRes.data);
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load patients');
+    } finally {
+      setLoading(false);
+    }
+  }, [search]);
 
-  const stats = {
-    total: patients.length,
-    visitsThisMonth: patients.reduce((sum, p) => sum + p.totalVisits, 0),
-    newThisMonth: patients.filter((p) => p.totalVisits <= 1).length,
-  };
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const filtered = patients;
 
   return (
     <AdminLayout>
       <PageHeader title="Patients" subtitle="Directory of all registered patients" />
 
+      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium">{error}</div>}
+
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard title="TOTAL PATIENTS" value={stats.total} icon={HeartPulse} iconColor="text-pink-600" bgColor="bg-pink-50" />
-        <StatCard title="TOTAL VISITS" value={stats.visitsThisMonth} icon={CalendarCheck} iconColor="text-blue-600" bgColor="bg-blue-50" />
-        <StatCard title="NEW PATIENTS" value={stats.newThisMonth} icon={UserPlus2} iconColor="text-green-600" bgColor="bg-green-50" />
+        <StatCard title="TOTAL VISITS" value={stats.totalVisits} icon={CalendarCheck} iconColor="text-blue-600" bgColor="bg-blue-50" />
+        <StatCard title="NEW THIS MONTH" value={stats.newThisMonth} icon={UserPlus2} iconColor="text-green-600" bgColor="bg-green-50" />
       </div>
 
       <Card>
@@ -43,41 +60,45 @@ const AdminPatients = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-400 text-xs uppercase">
-                <th className="pb-3 font-semibold">Patient</th>
-                <th className="pb-3 font-semibold">Contact</th>
-                <th className="pb-3 font-semibold">Age / Gender</th>
-                <th className="pb-3 font-semibold">Last Visit</th>
-                <th className="pb-3 font-semibold">Total Visits</th>
-                <th className="pb-3 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <tr key={p.id} className="border-t border-gray-50">
-                  <td className="py-3">
-                    <p className="font-semibold text-gray-800">{p.name}</p>
-                    <p className="text-xs text-gray-400">{p.id}</p>
-                  </td>
-                  <td className="py-3 text-gray-500">
-                    <p>{p.email}</p>
-                    <p className="text-xs text-gray-400">{p.phone}</p>
-                  </td>
-                  <td className="py-3 text-gray-500">{p.age} / {p.gender}</td>
-                  <td className="py-3 text-gray-500">{p.lastVisit}</td>
-                  <td className="py-3 text-gray-500">{p.totalVisits}</td>
-                  <td className="py-3 text-right">
-                    <button onClick={() => setViewItem(p)} className="text-blue-600 text-xs font-semibold hover:underline flex items-center gap-1 justify-end w-full">
-                      <Eye className="w-3.5 h-3.5" /> View
-                    </button>
-                  </td>
+          {loading ? (
+            <div className="py-10 text-center text-gray-400 text-sm">Loading patients...</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-400 text-xs uppercase">
+                  <th className="pb-3 font-semibold">Patient</th>
+                  <th className="pb-3 font-semibold">Contact</th>
+                  <th className="pb-3 font-semibold">Age / Gender</th>
+                  <th className="pb-3 font-semibold">Last Visit</th>
+                  <th className="pb-3 font-semibold">Total Visits</th>
+                  <th className="pb-3 font-semibold text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && <EmptyState text="No patients match your search." />}
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <tr key={p.id} className="border-t border-gray-50">
+                    <td className="py-3">
+                      <p className="font-semibold text-gray-800">{p.name}</p>
+                      <p className="text-xs text-gray-400">{p.id}</p>
+                    </td>
+                    <td className="py-3 text-gray-500">
+                      <p>{p.email}</p>
+                      <p className="text-xs text-gray-400">{p.phone}</p>
+                    </td>
+                    <td className="py-3 text-gray-500">{p.age} / {p.gender}</td>
+                    <td className="py-3 text-gray-500">{p.lastVisit}</td>
+                    <td className="py-3 text-gray-500">{p.totalVisits}</td>
+                    <td className="py-3 text-right">
+                      <button onClick={() => setViewItem(p)} className="text-blue-600 text-xs font-semibold hover:underline flex items-center gap-1 justify-end w-full">
+                        <Eye className="w-3.5 h-3.5" /> View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {!loading && filtered.length === 0 && <EmptyState text="No patients match your search." />}
         </div>
       </Card>
 

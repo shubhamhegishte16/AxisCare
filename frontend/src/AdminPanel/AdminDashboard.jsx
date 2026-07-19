@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Stethoscope, HeartPulse, CalendarCheck, ClipboardList, IndianRupee,
@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import AdminLayout from './AdminLayout';
 import { StatCard, Card, StatusBadge, RoleBadge } from './UI';
+import { adminService } from '../services/adminService';
 
 
 const quickActions = [
@@ -19,8 +20,83 @@ const quickActions = [
   { label: 'View Reports', icon: FileBarChart, path: '/admin/reports' },
 ];
 
+const emptyDashboard = {
+  stats: {
+    totalUsers: 0,
+    totalDoctors: 0,
+    totalPatients: 0,
+    appointmentsToday: 0,
+    pendingApprovals: 0,
+    revenueThisMonth: 0,
+  },
+  userGrowth: [],
+  roleDistribution: [],
+  departmentLoad: [],
+  pendingApprovalsList: [],
+  recentActivity: [],
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [dashboard, setDashboard] = useState(emptyDashboard);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        const res = await adminService.getDashboard();
+        if (!cancelled) {
+          if (res.success) {
+            setDashboard(res.data);
+            setError(null);
+          } else {
+            setError(res.message || 'Failed to load dashboard');
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.response?.data?.message || err.message || 'Failed to load dashboard');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+    return () => { cancelled = true; };
+  }, []);
+
+  const {
+    stats: dashboardStats,
+    userGrowth,
+    roleDistribution,
+    departmentLoad,
+    pendingApprovalsList,
+    recentActivity,
+  } = dashboard;
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64 text-gray-500">Loading dashboard...</div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center h-64 gap-2 text-center">
+          <p className="text-red-500 font-semibold">Couldn't load dashboard data</p>
+          <p className="text-gray-400 text-sm">{error}</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

@@ -1,34 +1,48 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Search, CalendarDays, CalendarCheck, Clock, XCircle } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card, StatusBadge, EmptyState } from './UI';
+import { adminService } from '../services/adminService';
 
 const statuses = ['All', 'Pending', 'Scheduled', 'Completed', 'Cancelled'];
 
 const AdminAppointments = () => {
-  const [appointments] = useState(mockAppointments);
+  const [appointments, setAppointments] = useState([]);
+  const [stats, setStats] = useState({ total: 0, scheduled: 0, completed: 0, cancelled: 0, pending: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const filtered = appointments.filter((a) => {
-    const matchesSearch =
-      a.patient.toLowerCase().includes(search.toLowerCase()) ||
-      a.doctor.toLowerCase().includes(search.toLowerCase()) ||
-      a.id.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || a.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [apptRes, statsRes] = await Promise.all([
+        adminService.getAppointments({ search: search || undefined, status: statusFilter !== 'All' ? statusFilter : undefined }),
+        adminService.getAppointmentStats(),
+      ]);
+      if (apptRes.success) setAppointments(apptRes.data);
+      if (statsRes.success) setStats(statsRes.data);
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load appointments');
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter]);
 
-  const stats = {
-    total: appointments.length,
-    scheduled: appointments.filter((a) => a.status === 'Scheduled').length,
-    completed: appointments.filter((a) => a.status === 'Completed').length,
-    cancelled: appointments.filter((a) => a.status === 'Cancelled').length,
-  };
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const filtered = appointments;
 
   return (
     <AdminLayout>
       <PageHeader title="Appointments" subtitle="System-wide view of all appointments across departments" />
+
+      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium">{error}</div>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="TOTAL" value={stats.total} icon={CalendarDays} iconColor="text-blue-600" bgColor="bg-blue-50" />
@@ -58,33 +72,37 @@ const AdminAppointments = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-400 text-xs uppercase">
-                <th className="pb-3 font-semibold">ID</th>
-                <th className="pb-3 font-semibold">Patient</th>
-                <th className="pb-3 font-semibold">Doctor</th>
-                <th className="pb-3 font-semibold">Department</th>
-                <th className="pb-3 font-semibold">Date & Time</th>
-                <th className="pb-3 font-semibold">Type</th>
-                <th className="pb-3 font-semibold text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((a) => (
-                <tr key={a.id} className="border-t border-gray-50">
-                  <td className="py-3 font-semibold text-gray-800">{a.id}</td>
-                  <td className="py-3 text-gray-600">{a.patient}</td>
-                  <td className="py-3 text-gray-600">{a.doctor}</td>
-                  <td className="py-3 text-gray-500">{a.department}</td>
-                  <td className="py-3 text-gray-500">{a.date} · {a.time}</td>
-                  <td className="py-3 text-gray-500">{a.type}</td>
-                  <td className="py-3 text-right"><StatusBadge status={a.status} /></td>
+          {loading ? (
+            <div className="py-10 text-center text-gray-400 text-sm">Loading appointments...</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-400 text-xs uppercase">
+                  <th className="pb-3 font-semibold">ID</th>
+                  <th className="pb-3 font-semibold">Patient</th>
+                  <th className="pb-3 font-semibold">Doctor</th>
+                  <th className="pb-3 font-semibold">Department</th>
+                  <th className="pb-3 font-semibold">Date & Time</th>
+                  <th className="pb-3 font-semibold">Type</th>
+                  <th className="pb-3 font-semibold text-right">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && <EmptyState text="No appointments match your search." />}
+              </thead>
+              <tbody>
+                {filtered.map((a) => (
+                  <tr key={a.id} className="border-t border-gray-50">
+                    <td className="py-3 font-semibold text-gray-800">{a.id}</td>
+                    <td className="py-3 text-gray-600">{a.patient}</td>
+                    <td className="py-3 text-gray-600">{a.doctor}</td>
+                    <td className="py-3 text-gray-500">{a.department}</td>
+                    <td className="py-3 text-gray-500">{a.date} · {a.time}</td>
+                    <td className="py-3 text-gray-500">{a.type}</td>
+                    <td className="py-3 text-right"><StatusBadge status={a.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {!loading && filtered.length === 0 && <EmptyState text="No appointments match your search." />}
         </div>
       </Card>
     </AdminLayout>

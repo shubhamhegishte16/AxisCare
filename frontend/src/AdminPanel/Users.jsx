@@ -1,74 +1,120 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Search, Plus, Trash2, Pencil, ShieldOff, ShieldCheck as ShieldCheckIcon } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card, Modal, ConfirmDialog, EmptyState, RoleBadge, StatusBadge } from './UI';
 import { Users as UsersIcon, UserCheck, UserX, UserPlus } from 'lucide-react';
+import { adminService } from '../services/adminService';
 
 const roles = ['All', 'admin', 'doctor', 'receptionist', 'patient', 'laboratory', 'pharmacist'];
 const emptyForm = { name: '', email: '', phone: '', role: 'patient', department: '' };
 
 const AdminUsers = () => {
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, doctors: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState(null);
+
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
 
-  const stats = useMemo(() => ({
-    total: users.length,
-    active: users.filter((u) => u.status === 'Active').length,
-    inactive: users.filter((u) => u.status !== 'Active').length,
-    doctors: users.filter((u) => u.role === 'doctor').length,
-  }), [users]);
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [usersRes, statsRes] = await Promise.all([
+        adminService.getUsers({ search: search || undefined, role: roleFilter !== 'All' ? roleFilter : undefined }),
+        adminService.getUserStats(),
+      ]);
+      if (usersRes.success) setUsers(usersRes.data);
+      if (statsRes.success) setStats(statsRes.data);
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, roleFilter]);
 
-  const filtered = users.filter((u) => {
-    const matchesSearch =
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
-      u.id.toLowerCase().includes(search.toLowerCase());
-    const matchesRole = roleFilter === 'All' || u.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300); // debounce search/filter changes
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  const filtered = users;
 
   const openAdd = () => {
     setForm(emptyForm);
+    setActionError(null);
     setShowAdd(true);
   };
 
   const openEdit = (u) => {
     setEditItem(u);
-    setForm({ name: u.name, email: u.email, phone: u.phone, role: u.role, department: u.department });
+    setActionError(null);
+    setForm({ name: u.name, email: u.email, phone: u.phone, role: u.role, department: u.department === '-' ? '' : u.department });
   };
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    const newUser = {
-      id: `USR-${String(users.length + 1).padStart(3, '0')}`,
-      ...form,
-      status: 'Active',
-      joined: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-    };
-    setUsers((prev) => [newUser, ...prev]);
-    setShowAdd(false);
+    try {
+      setSaving(true);
+      const res = await adminService.createUser(form);
+      if (res.success) {
+        setShowAdd(false);
+        await loadData();
+      } else {
+        setActionError(res.message || 'Failed to create user');
+      }
+    } catch (err) {
+      setActionError(err.response?.data?.message || err.message || 'Failed to create user');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleEdit = (e) => {
+  const handleEdit = async (e) => {
     e.preventDefault();
-    setUsers((prev) => prev.map((u) => (u.id === editItem.id ? { ...u, ...form } : u)));
-    setEditItem(null);
+    try {
+      setSaving(true);
+      const res = await adminService.updateUser(editItem._id, form);
+      if (res.success) {
+        setEditItem(null);
+        await loadData();
+      } else {
+        setActionError(res.message || 'Failed to update user');
+      }
+    } catch (err) {
+      setActionError(err.response?.data?.message || err.message || 'Failed to update user');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggleStatus = (u) => {
-    setUsers((prev) =>
-      prev.map((x) => (x.id === u.id ? { ...x, status: x.status === 'Active' ? 'Inactive' : 'Active' } : x))
-    );
+  const toggleStatus = async (u) => {
+    try {
+      const res = await adminService.toggleUserStatus(u._id);
+      if (res.success) await loadData();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to update status');
+    }
   };
 
-  const handleDelete = () => {
-    setUsers((prev) => prev.filter((u) => u.id !== deleteItem.id));
-    setDeleteItem(null);
+  const handleDelete = async () => {
+    try {
+      const res = await adminService.deleteUser(deleteItem._id);
+      setDeleteItem(null);
+      if (res.success) await loadData();
+      else setError(res.message || 'Failed to delete user');
+    } catch (err) {
+      setDeleteItem(null);
+      setError(err.response?.data?.message || err.message || 'Failed to delete user');
+    }
   };
 
   return (
@@ -82,6 +128,10 @@ const AdminUsers = () => {
           </button>
         }
       />
+
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium">{error}</div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="TOTAL USERS" value={stats.total} icon={UsersIcon} iconColor="text-blue-600" bgColor="bg-blue-50" />
@@ -111,60 +161,66 @@ const AdminUsers = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-400 text-xs uppercase">
-                <th className="pb-3 font-semibold">Name</th>
-                <th className="pb-3 font-semibold">Contact</th>
-                <th className="pb-3 font-semibold">Role</th>
-                <th className="pb-3 font-semibold">Department</th>
-                <th className="pb-3 font-semibold">Joined</th>
-                <th className="pb-3 font-semibold">Status</th>
-                <th className="pb-3 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u) => (
-                <tr key={u.id} className="border-t border-gray-50">
-                  <td className="py-3">
-                    <p className="font-semibold text-gray-800">{u.name}</p>
-                    <p className="text-xs text-gray-400">{u.id}</p>
-                  </td>
-                  <td className="py-3 text-gray-500">
-                    <p>{u.email}</p>
-                    <p className="text-xs text-gray-400">{u.phone}</p>
-                  </td>
-                  <td className="py-3"><RoleBadge role={u.role} /></td>
-                  <td className="py-3 text-gray-500">{u.department}</td>
-                  <td className="py-3 text-gray-500">{u.joined}</td>
-                  <td className="py-3"><StatusBadge status={u.status} /></td>
-                  <td className="py-3">
-                    <div className="flex justify-end gap-3">
-                      <button onClick={() => toggleStatus(u)} title={u.status === 'Active' ? 'Deactivate' : 'Activate'} className="text-gray-400 hover:text-amber-600">
-                        {u.status === 'Active' ? <ShieldOff className="w-4 h-4" /> : <ShieldCheckIcon className="w-4 h-4" />}
-                      </button>
-                      <button onClick={() => openEdit(u)} className="text-gray-400 hover:text-blue-600">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => setDeleteItem(u)} className="text-gray-400 hover:text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+          {loading ? (
+            <div className="py-10 text-center text-gray-400 text-sm">Loading users...</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-400 text-xs uppercase">
+                  <th className="pb-3 font-semibold">Name</th>
+                  <th className="pb-3 font-semibold">Contact</th>
+                  <th className="pb-3 font-semibold">Role</th>
+                  <th className="pb-3 font-semibold">Department</th>
+                  <th className="pb-3 font-semibold">Joined</th>
+                  <th className="pb-3 font-semibold">Status</th>
+                  <th className="pb-3 font-semibold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && <EmptyState text="No users match your search." />}
+              </thead>
+              <tbody>
+                {filtered.map((u) => (
+                  <tr key={u.id} className="border-t border-gray-50">
+                    <td className="py-3">
+                      <p className="font-semibold text-gray-800">{u.name}</p>
+                      <p className="text-xs text-gray-400">{u.id}</p>
+                    </td>
+                    <td className="py-3 text-gray-500">
+                      <p>{u.email}</p>
+                      <p className="text-xs text-gray-400">{u.phone}</p>
+                    </td>
+                    <td className="py-3"><RoleBadge role={u.role} /></td>
+                    <td className="py-3 text-gray-500">{u.department}</td>
+                    <td className="py-3 text-gray-500">{u.joined}</td>
+                    <td className="py-3"><StatusBadge status={u.status} /></td>
+                    <td className="py-3">
+                      <div className="flex justify-end gap-3">
+                        <button onClick={() => toggleStatus(u)} title={u.status === 'Active' ? 'Deactivate' : 'Activate'} className="text-gray-400 hover:text-amber-600">
+                          {u.status === 'Active' ? <ShieldOff className="w-4 h-4" /> : <ShieldCheckIcon className="w-4 h-4" />}
+                        </button>
+                        <button onClick={() => openEdit(u)} className="text-gray-400 hover:text-blue-600">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setDeleteItem(u)} className="text-gray-400 hover:text-red-600">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {!loading && filtered.length === 0 && <EmptyState text="No users match your search." />}
         </div>
       </Card>
 
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add New User">
-        <UserForm form={form} setForm={setForm} onSubmit={handleAdd} submitLabel="Add User" onCancel={() => setShowAdd(false)} />
+        {actionError && <div className="mb-3 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-medium">{actionError}</div>}
+        <UserForm form={form} setForm={setForm} onSubmit={handleAdd} submitLabel={saving ? 'Saving...' : 'Add User'} onCancel={() => setShowAdd(false)} disabled={saving} />
       </Modal>
 
       <Modal open={!!editItem} onClose={() => setEditItem(null)} title={`Edit ${editItem?.name || ''}`}>
-        <UserForm form={form} setForm={setForm} onSubmit={handleEdit} submitLabel="Save Changes" onCancel={() => setEditItem(null)} />
+        {actionError && <div className="mb-3 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-medium">{actionError}</div>}
+        <UserForm form={form} setForm={setForm} onSubmit={handleEdit} submitLabel={saving ? 'Saving...' : 'Save Changes'} onCancel={() => setEditItem(null)} disabled={saving} />
       </Modal>
 
       <ConfirmDialog
@@ -180,7 +236,7 @@ const AdminUsers = () => {
   );
 };
 
-const UserForm = ({ form, setForm, onSubmit, submitLabel, onCancel }) => (
+const UserForm = ({ form, setForm, onSubmit, submitLabel, onCancel, disabled }) => (
   <form onSubmit={onSubmit} className="space-y-4">
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
@@ -210,7 +266,7 @@ const UserForm = ({ form, setForm, onSubmit, submitLabel, onCancel }) => (
     </div>
     <div className="flex justify-end gap-3 pt-2">
       <button type="button" onClick={onCancel} className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
-      <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">{submitLabel}</button>
+      <button type="submit" disabled={disabled} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">{submitLabel}</button>
     </div>
   </form>
 );

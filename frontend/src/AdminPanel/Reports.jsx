@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -6,8 +6,63 @@ import {
 } from 'recharts';
 import AdminLayout from './AdminLayout';
 import { PageHeader, Card } from './UI';
+import { adminService } from '../services/adminService';
 
-const AdminReports = () => (
+const AdminReports = () => {
+  const [data, setData] = useState({
+    userGrowth: [],
+    revenueByMonth: [],
+    departmentLoad: [],
+    roleDistribution: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await adminService.getReports();
+        if (!cancelled) {
+          if (res.success) {
+            setData(res.data);
+            setError(null);
+          } else {
+            setError(res.message || 'Failed to load reports');
+          }
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.response?.data?.message || err.message || 'Failed to load reports');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const { userGrowth, revenueByMonth, departmentLoad, roleDistribution } = data;
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64 text-gray-500">Loading reports...</div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center h-64 gap-2 text-center">
+          <p className="text-red-500 font-semibold">Couldn't load report data</p>
+          <p className="text-gray-400 text-sm">{error}</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
   <AdminLayout>
     <PageHeader
       title="Reports"
@@ -83,6 +138,7 @@ const AdminReports = () => (
       </Card>
     </div>
   </AdminLayout>
-);
+  );
+};
 
 export default AdminReports;

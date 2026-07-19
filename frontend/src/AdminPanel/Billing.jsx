@@ -1,25 +1,69 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { IndianRupee, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
 import AdminLayout from './AdminLayout';
 import { PageHeader, StatCard, Card } from './UI';
+import { adminService } from '../services/adminService';
 
 const AdminBilling = () => {
-  const latest = revenueByMonth[revenueByMonth.length - 1];
-  const profit = latest.revenue - latest.expenses;
-  const totalRevenueYtd = revenueByMonth.reduce((sum, m) => sum + m.revenue, 0);
+  const [revenueByMonth, setRevenueByMonth] = useState([]);
+  const [stats, setStats] = useState({ revenueThisMonth: 0, expensesThisMonth: 0, netProfit: 0, revenueYtd: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const [revRes, statsRes] = await Promise.all([
+          adminService.getMonthlyRevenue(),
+          adminService.getBillingStats(),
+        ]);
+        if (!cancelled) {
+          if (revRes.success) setRevenueByMonth(revRes.data);
+          if (statsRes.success) setStats(statsRes.data);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.response?.data?.message || err.message || 'Failed to load billing data');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64 text-gray-500">Loading billing data...</div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center h-64 gap-2 text-center">
+          <p className="text-red-500 font-semibold">Couldn't load billing data</p>
+          <p className="text-gray-400 text-sm">{error}</p>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
       <PageHeader title="Billing & Revenue" subtitle="Hospital-wide financial overview across all departments" />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard title="REVENUE (THIS MONTH)" value={`Rs. ${latest.revenue.toLocaleString()}`} icon={IndianRupee} iconColor="text-green-600" bgColor="bg-green-50" />
-        <StatCard title="EXPENSES (THIS MONTH)" value={`Rs. ${latest.expenses.toLocaleString()}`} icon={TrendingDown} iconColor="text-red-500" bgColor="bg-red-50" />
-        <StatCard title="NET PROFIT" value={`Rs. ${profit.toLocaleString()}`} icon={Wallet} iconColor="text-blue-600" bgColor="bg-blue-50" />
-        <StatCard title="REVENUE (YTD)" value={`Rs. ${totalRevenueYtd.toLocaleString()}`} icon={TrendingUp} iconColor="text-indigo-600" bgColor="bg-indigo-50" />
+        <StatCard title="REVENUE (THIS MONTH)" value={`Rs. ${stats.revenueThisMonth.toLocaleString()}`} icon={IndianRupee} iconColor="text-green-600" bgColor="bg-green-50" />
+        <StatCard title="EXPENSES (THIS MONTH)" value={`Rs. ${stats.expensesThisMonth.toLocaleString()}`} icon={TrendingDown} iconColor="text-red-500" bgColor="bg-red-50" />
+        <StatCard title="NET PROFIT" value={`Rs. ${stats.netProfit.toLocaleString()}`} icon={Wallet} iconColor="text-blue-600" bgColor="bg-blue-50" />
+        <StatCard title="REVENUE (YTD)" value={`Rs. ${stats.revenueYtd.toLocaleString()}`} icon={TrendingUp} iconColor="text-indigo-600" bgColor="bg-indigo-50" />
       </div>
 
       <Card title="Revenue vs Expenses">
