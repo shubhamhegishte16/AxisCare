@@ -72,6 +72,7 @@ import LabRequests from './laboratory_panel/LabRequests';
 import LabResults from './laboratory_panel/LabResults';
 import LabHistory from './laboratory_panel/LabHistory';
 import LabSettings from './laboratory_panel/LabSettings';
+import LabNotifications from './laboratory_panel/LabNotifications';
 import ProcessTest from './laboratory_panel/ProcessTest';
 
 function App() {
@@ -165,6 +166,7 @@ function App() {
         <Route path="/lab/requests/:id/process" element={<ProcessTest />} />
         <Route path="/lab/results" element={<LabResults />} />
         <Route path="/lab/history" element={<LabHistory />} />
+        <Route path="/lab/notifications" element={<LabNotifications />} />
         <Route path="/lab/settings" element={<LabSettings />} />
 
         {/* Generic Role Login/Register */}

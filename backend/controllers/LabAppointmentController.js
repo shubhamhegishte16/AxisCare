@@ -2,6 +2,7 @@ import LabAppointment from '../models/LabAppointment.js';
 import Prescription from '../models/Prescription.js';
 import Patient from '../models/Patient.js';
 import User from '../models/user.js';
+import { triggerLabNotification } from '../utils/triggerLabNotification.js';
 
 // Book a lab appointment
 export const bookLabAppointment = async (req, res) => {
@@ -27,6 +28,7 @@ export const bookLabAppointment = async (req, res) => {
       appointmentDate,
       appointmentTime,
       appointmentType,
+      priority,
       notes,
       symptoms,
       referringDoctor,
@@ -89,6 +91,7 @@ export const bookLabAppointment = async (req, res) => {
       appointmentDate,
       appointmentTime,
       appointmentType: appointmentType || 'In-Person',
+      priority: priority || 'Normal',
       notes: notes || '',
       symptoms: symptoms || '',
       referringDoctor: referringDoctor || '',
@@ -99,6 +102,19 @@ export const bookLabAppointment = async (req, res) => {
     });
 
     await appointment.save();
+
+    const labUsers = await User.find({ role: { $in: ['lab', 'laboratory'] } }).select('_id');
+    await Promise.all(labUsers.map(labUser => triggerLabNotification(
+      labUser._id,
+      'TestRequest',
+      'New Test Request',
+      `${appointment.patientName} booked ${appointment.labTests.length} lab test${appointment.labTests.length > 1 ? 's' : ''}: ${appointment.labTests.map(test => test.testName).join(', ')}.`,
+      'View Request',
+      '/lab/requests',
+      'medium',
+      appointment._id,
+      'LabAppointment'
+    )));
 
     res.status(201).json({
       success: true,

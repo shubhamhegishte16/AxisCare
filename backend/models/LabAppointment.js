@@ -97,6 +97,11 @@ const labAppointmentSchema = new mongoose.Schema({
     enum: ['In-Person', 'Home Collection', 'Video Consult'],
     default: 'In-Person',
   },
+  priority: {
+    type: String,
+    enum: ['Normal', 'High', 'Urgent'],
+    default: 'Normal',
+  },
 
   // Additional notes
   notes: {

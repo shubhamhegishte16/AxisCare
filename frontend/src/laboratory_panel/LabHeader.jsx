@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, 
   FlaskConical, 
@@ -9,12 +9,14 @@ import {
   ChevronDown,
   LogOut
 } from 'lucide-react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { labService } from '../services/labService';
 
 const LabHeader = () => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [localUser, setLocalUser] = useState(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -31,6 +33,14 @@ const LabHeader = () => {
       console.error('Logout failed:', err);
     }
   };
+
+  useEffect(() => {
+    let mounted = true;
+    labService.getNotifications({ read: false, limit: 1 })
+      .then(res => { if (mounted && res.success) setUnreadCount(res.unreadCount || 0); })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/lab', exact: true },
@@ -86,12 +96,18 @@ const LabHeader = () => {
       {/* Right Actions */}
       <div className="flex items-center gap-4">
         {/* Notification Bell */}
-        <div className="text-gray-400 hover:text-gray-600 relative transition-colors cursor-pointer">
+        <button
+          onClick={() => navigate('/lab/notifications')}
+          className="text-gray-400 hover:text-gray-600 relative transition-colors cursor-pointer"
+          title="Notifications"
+        >
           <Bell className="w-5 h-5" />
-          <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-white px-0.5">
-            2
-          </span>
-        </div>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center border-2 border-white px-0.5">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
 
 
         <div className="h-8 w-px bg-gray-200 mx-1"></div>
@@ -126,7 +142,7 @@ const LabHeader = () => {
               </div>
 
               <button
-                onClick={() => setShowDropdown(false)}
+                onClick={() => { setShowDropdown(false); navigate('/lab/settings'); }}
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
               >
                 <Settings className="w-4 h-4 text-gray-400" />

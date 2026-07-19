@@ -1,5 +1,5 @@
 import express from 'express';
-import { getLabRequests, updateLabRequestStatus, completeLabRequest, getLabRequestById, getLabStats } from '../controllers/labPanelController.js';
+import { getLabDashboard, getLabRequests, getLabResults, updateLabRequestStatus, completeLabRequest, getLabRequestById, getLabStats } from '../controllers/labPanelController.js';
 import { protect, authorizeRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -10,6 +10,8 @@ router.use(authorizeRole('lab'));
 
 // Routes for laboratory panel
 router.get('/stats', getLabStats);
+router.get('/dashboard', getLabDashboard);
+router.get('/results', getLabResults);
 router.get('/requests', getLabRequests);
 router.get('/requests/:id', getLabRequestById);
 router.put('/requests/:id/status', updateLabRequestStatus);

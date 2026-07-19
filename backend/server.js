@@ -23,6 +23,8 @@ import billRoutes from './routes/PatientBillRoutes.js';
 
 // Laboratory Panel
 import labPanelRoutes from './routes/labPanelRoutes.js';
+import labSettingsRoutes from './routes/labSettingsRoutes.js';
+import labNotificationRoutes from './routes/labNotificationRoutes.js';
 
 // Receptionist Panel
 import receptionistRoutes from "./routes/receptionistRoutes.js";
@@ -87,6 +89,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use("/api/receptionist", receptionistRoutes);
 
 // ================= Laboratory =================
+app.use("/api/laboratory/notifications", labNotificationRoutes);
+app.use("/api/laboratory/settings", labSettingsRoutes);
 app.use("/api/laboratory", labPanelRoutes);
 
 // ================= Pharmacy =================
