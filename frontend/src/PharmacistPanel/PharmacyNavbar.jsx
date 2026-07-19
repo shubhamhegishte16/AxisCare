@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { PackagePlus, Bell, User, LogOut } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 const navItems = [
   { label: 'Dashboard', path: '/pharmacy/dashboard' },
@@ -28,7 +29,7 @@ const PharmacyNavbar = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:5000/api/auth/logout', {
+      await fetch(apiUrl('/auth/logout'), {
         method: 'POST',
         credentials: 'include',
       });

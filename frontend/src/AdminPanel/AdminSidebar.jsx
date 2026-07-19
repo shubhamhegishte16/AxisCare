@@ -5,6 +5,7 @@ import {
   Building2, PillBottle, Receipt, BarChart3, Bell, User, LogOut,
   ShieldCheck, Menu, X,
 } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 const navItems = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
@@ -33,7 +34,7 @@ const AdminSidebar = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:5000/api/auth/logout', {
+      await fetch(apiUrl('/auth/logout'), {
         method: 'POST',
         credentials: 'include',
       });

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
 import { doctorService } from '../services/doctorService';
+import { apiOriginUrl } from '../config/api';
 
 const Header = () => {
   const [profile, setProfile] = useState(null);
@@ -93,7 +94,7 @@ const Header = () => {
           </div>
           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
              {profile && profile.avatar ? (
-                <img src={`http://localhost:5000${profile.avatar}`} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={apiOriginUrl(profile.avatar)} alt="Avatar" className="w-full h-full object-cover" />
              ) : (
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.user?.fullName || localUser?.fullName || 'Dr')}&background=random`} alt="Avatar" className="w-full h-full object-cover" />
              )}

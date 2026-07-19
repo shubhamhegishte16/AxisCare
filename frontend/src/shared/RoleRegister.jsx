@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import RoleAuthLayout from './RoleAuthLayout';
 import { getRoleConfig } from './roleConfig';
+import { apiUrl } from '../config/api';
 
 const initialForm = { fullName: '', email: '', phone: '', password: '', confirmPassword: '' };
 
@@ -33,9 +34,10 @@ const RoleRegister = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(apiUrl('/auth/register'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           fullName: form.fullName,
           email: form.email,

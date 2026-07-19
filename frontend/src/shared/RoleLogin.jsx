@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import RoleAuthLayout from './RoleAuthLayout';
 import { getRoleConfig } from './roleConfig';
+import { apiUrl } from '../config/api';
 
 const RoleLogin = () => {
   const { role } = useParams();
@@ -24,7 +25,7 @@ const RoleLogin = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(apiUrl('/auth/login'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 const labApi = axios.create({
-  baseURL: 'http://localhost:5000/api/laboratory',
+  baseURL: apiUrl('/laboratory'),
   withCredentials: true,
 });
 

@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = 'http://localhost:5000/api' || 'http://localhost:5000/api/pharmacy';
+import { API_URL } from '../config/api';
 
 const pharmacyApi = axios.create({
   baseURL: API_URL,

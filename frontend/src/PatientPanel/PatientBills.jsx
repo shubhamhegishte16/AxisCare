@@ -17,6 +17,7 @@ import {
 import { FileText } from 'lucide-react';
 import Navbar from './Navbar.jsx';
 import { billService } from '../services/PatientBillService.js';
+import { apiUrl } from '../config/api.js';
 
 export default function PatientBills() {
     const [activeTab, setActiveTab] = useState('All');
@@ -170,7 +171,7 @@ export default function PatientBills() {
             }
 
             // Open in new tab - simple like appointments
-            const downloadUrl = `http://localhost:5000/api/bills/${billId}/download`;
+            const downloadUrl = apiUrl(`/bills/${billId}/download`);
             window.open(downloadUrl, '_blank');
             
             showNotification('success', 'Bill opened in new tab!');

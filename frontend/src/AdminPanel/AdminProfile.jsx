@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Shield, LogOut } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { PageHeader, Card } from './UI';
+import { apiUrl } from '../config/api';
 
 const AdminProfile = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const AdminProfile = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:5000/api/auth/logout', {
+      await fetch(apiUrl('/auth/logout'), {
         method: 'POST',
         credentials: 'include',
       });

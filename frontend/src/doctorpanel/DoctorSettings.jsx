@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
+import { apiOriginUrl, apiUrl } from '../config/api';
 import { 
   User,
   Briefcase,
@@ -37,7 +38,7 @@ const DoctorSettings = () => {
 
   // Fetch profile on component mount
   useEffect(() => {
-    fetch("http://localhost:5000/api/doctor/profile", { credentials: "include" })
+    fetch(apiUrl('/doctor/profile'), { credentials: "include" })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
@@ -48,7 +49,7 @@ const DoctorSettings = () => {
             fullName: d.user?.fullName || '',
             email: d.user?.email || '',
             phone: d.user?.phone || '',
-            avatar: d.user?.avatar ? `http://localhost:5000${d.user.avatar}` : 'https://i.pravatar.cc/150?img=32',
+            avatar: d.user?.avatar ? apiOriginUrl(d.user.avatar) : 'https://i.pravatar.cc/150?img=32',
           });
         }
         setLoading(false);
@@ -65,7 +66,7 @@ const DoctorSettings = () => {
   };
 
   const handleSave = () => {
-    fetch("http://localhost:5000/api/doctor/profile", {
+    fetch(apiUrl('/doctor/profile'), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -86,7 +87,7 @@ const DoctorSettings = () => {
     const formData = new FormData();
     formData.append("avatar", file);
 
-    fetch("http://localhost:5000/api/doctor/upload-avatar", {
+    fetch(apiUrl('/doctor/upload-avatar'), {
       method: "POST",
       credentials: "include",
       body: formData
@@ -94,7 +95,7 @@ const DoctorSettings = () => {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          setProfile(prev => ({ ...prev, avatar: `http://localhost:5000${data.avatar}` }));
+          setProfile(prev => ({ ...prev, avatar: apiOriginUrl(data.avatar) }));
           alert("Avatar updated!");
         } else {
           alert("Failed to upload avatar");
@@ -105,7 +106,7 @@ const DoctorSettings = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/api/auth/logout", { method: "POST" });
+      await fetch(apiUrl('/auth/logout'), { method: "POST", credentials: "include" });
       navigate("/");
     } catch (err) {
       console.error("Logout failed", err);

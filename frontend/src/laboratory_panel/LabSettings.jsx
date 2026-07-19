@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Bell, Camera, ChevronDown, FileCheck, FileText, FlaskConical, KeyRound, Loader2 } from 'lucide-react';
 import LabHeader from './LabHeader';
 import { labService } from '../services/labService';
+import { API_ORIGIN } from '../config/api';
 
-const API_ORIGIN = 'http://localhost:5000';
 const defaultForm = { fullName: '', email: '', phone: '', empId: '', designation: '', department: '' };
 const defaultNotifications = { emailNewRequests: true, emailResultUpdates: true, emailSystemAlerts: true, appNewRequests: true, appResultUpdates: true, appSystemAlerts: true };
 const defaultPreferences = { defaultSampleType: 'Blood', defaultPriority: 'Normal', resultsAutoApprove: 'After Verification', workingTimeStart: '08:00', workingTimeEnd: '16:00' };

@@ -18,6 +18,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { appointmentService } from '../services/appointmentService';
+import { apiOriginUrl } from '../config/api';
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -239,7 +240,7 @@ const Appointments = () => {
 
               {selectedApt.documentPath && (
                  <div className="flex justify-end">
-                    <a href={`http://localhost:5000${selectedApt.documentPath}`} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 font-semibold hover:underline">View Uploaded Document</a>
+                    <a href={apiOriginUrl(selectedApt.documentPath)} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 font-semibold hover:underline">View Uploaded Document</a>
                  </div>
               )}
 

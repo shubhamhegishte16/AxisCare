@@ -4,6 +4,13 @@ import bcrypt from "bcryptjs";
 import Patient from '../models/Patient.js';
 import { triggerDoctorNotification } from '../utils/triggerDoctorNotification.js';
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 export const registerUser = async (req, res) => {
   try {
     const { fullName, email, phone, password, role, department } = req.body;
@@ -100,12 +107,7 @@ export const registerUser = async (req, res) => {
       }
 
       // Set cookie
-      res.cookie("jwt", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      res.cookie("jwt", token, cookieOptions);
 
       res.status(201).json({
         success: true,
@@ -142,12 +144,7 @@ export const loginUser = async (req, res) => {
       const token = generateToken(user._id);
 
       // Set cookie
-      res.cookie("jwt", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      res.cookie("jwt", token, cookieOptions);
 
       res.status(200).json({
         success: true,
@@ -172,6 +169,8 @@ export const loginUser = async (req, res) => {
 export const logoutUser = (req, res) => {
   res.cookie("jwt", "", {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     expires: new Date(0),
   });
   res.status(200).json({ success: true, message: "Logged out successfully" });

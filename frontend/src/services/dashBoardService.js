@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { billService } from './PatientBillService.js';
 import { appointmentService } from './appointmentService.js';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../config/api';
 
 const dashboardApi = axios.create({
   baseURL: API_URL,
