@@ -11,6 +11,21 @@ const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
+const generatePatientIdentifiers = async () => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const patientPassNo = String(Math.floor(1000 + Math.random() * 9000));
+    const patientId = `#PT-${Math.floor(100000 + Math.random() * 900000)}`;
+    const exists = await Patient.exists({
+      $or: [{ patientPassNo }, { patientId }],
+    });
+    if (!exists) return { patientPassNo, patientId };
+  }
+  return {
+    patientPassNo: `${Date.now()}`.slice(-8),
+    patientId: `#PT-${Date.now()}`,
+  };
+};
+
 export const registerUser = async (req, res) => {
   try {
     const { fullName, email, phone, password, role, department } = req.body;
@@ -52,11 +67,12 @@ export const registerUser = async (req, res) => {
       let patientData = null;
       if (role === 'patient' || role === undefined) {
         try {
-          const nameParts = fullName.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
+          const nameParts = fullName.trim().split(/\s+/).filter(Boolean);
+          const firstName = nameParts[0] || 'Patient';
+          const lastName = nameParts.slice(1).join(' ') || 'User';
           const now = new Date();
           const dateOfRegistration = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
+          const { patientPassNo, patientId } = await generatePatientIdentifiers();
 
           patientData = await Patient.create({
             userId: user._id,
@@ -68,6 +84,8 @@ export const registerUser = async (req, res) => {
             phoneNumber: phone,
             email: email,
             dateOfRegistration,
+            patientPassNo,
+            patientId,
             emergencyContacts: [
               {
                 name: 'Emergency Contact',

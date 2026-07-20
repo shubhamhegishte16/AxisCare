@@ -10,26 +10,105 @@ const generatePatientIdentifiers = () => {
   return { patientPassNo, patientId };
 };
 
+const generateUniquePatientIdentifiers = async () => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const identifiers = generatePatientIdentifiers();
+    const exists = await Patient.exists({
+      $or: [
+        { patientPassNo: identifiers.patientPassNo },
+        { patientId: identifiers.patientId },
+      ],
+    });
+    if (!exists) return identifiers;
+  }
+  return {
+    patientPassNo: `${Date.now()}`.slice(-8),
+    patientId: `#PT-${Date.now()}`,
+  };
+};
+
+const fallbackNameParts = (fullName = '') => {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || 'Patient',
+    lastName: parts.slice(1).join(' ') || 'User',
+  };
+};
+
+const ensurePatientRequiredFields = async (patient, user) => {
+  let changed = false;
+  const fallback = fallbackNameParts(user?.fullName);
+
+  if (!patient.firstName?.trim()) {
+    patient.firstName = fallback.firstName;
+    changed = true;
+  }
+  if (!patient.lastName?.trim()) {
+    patient.lastName = fallback.lastName;
+    changed = true;
+  }
+  if (!patient.dateOfBirth?.trim()) {
+    patient.dateOfBirth = '01/01/1970';
+    changed = true;
+  }
+  if (!patient.gender) {
+    patient.gender = 'Prefer not to say';
+    changed = true;
+  }
+  if (!patient.address?.trim()) {
+    patient.address = 'Not provided';
+    changed = true;
+  }
+  if (!patient.phoneNumber?.trim()) {
+    patient.phoneNumber = user?.phone || 'Not provided';
+    changed = true;
+  }
+  if (!patient.email?.trim()) {
+    patient.email = user?.email || 'not-provided@example.com';
+    changed = true;
+  }
+  if (!patient.dateOfRegistration?.trim()) {
+    const now = new Date();
+    patient.dateOfRegistration = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
+    changed = true;
+  }
+  if (!patient.patientPassNo || !patient.patientId) {
+    const identifiers = await generateUniquePatientIdentifiers();
+    if (!patient.patientPassNo) patient.patientPassNo = identifiers.patientPassNo;
+    if (!patient.patientId) patient.patientId = identifiers.patientId;
+    changed = true;
+  }
+  if (!Array.isArray(patient.emergencyContacts) || patient.emergencyContacts.length === 0) {
+    patient.emergencyContacts = [{
+      name: 'Emergency Contact',
+      relationship: 'Not specified',
+      phone1: 'Not provided',
+      isPrimary: true,
+    }];
+    changed = true;
+  }
+
+  return changed;
+};
+
 // Helper function to create a new patient profile
 const createNewPatient = async (userId, user, additionalData = {}) => {
-  const nameParts = user.fullName ? user.fullName.split(' ') : ['', ''];
-  const firstName = nameParts[0] || 'User';
-  const lastName = nameParts.slice(1).join(' ') || '';
+  const { firstName, lastName } = fallbackNameParts(user.fullName);
 
   const now = new Date();
   const dateOfRegistration = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
 
-  const { patientPassNo, patientId } = generatePatientIdentifiers();
+  const { patientPassNo, patientId } = await generateUniquePatientIdentifiers();
 
   const patientData = {
     userId: userId,
-    firstName: additionalData.firstName || firstName,
-    lastName: additionalData.lastName || lastName,
+    firstName: additionalData.firstName?.trim() || firstName,
+    lastName: additionalData.lastName?.trim() || lastName,
     dateOfBirth: additionalData.dateOfBirth || '01/01/1970',
     gender: additionalData.gender || 'Prefer not to say',
-    address: additionalData.address || user.address || 'Not provided',
-    phoneNumber: additionalData.phoneNumber || user.phone || 'Not provided',
-    email: additionalData.email || user.email || 'Not provided',
+    address: additionalData.address?.trim() || user.address || 'Not provided',
+    phoneNumber: additionalData.phoneNumber?.trim() || user.phone || 'Not provided',
+    email: additionalData.email?.trim() || user.email || 'not-provided@example.com',
     dateOfRegistration: dateOfRegistration,
     patientPassNo: patientPassNo,
     patientId: patientId,
@@ -71,8 +150,9 @@ export const getOrCreatePatientProfile = async (req, res) => {
       // Create new patient profile
       patient = await createNewPatient(userId, user);
     } else {
+      const repairedRequiredFields = await ensurePatientRequiredFields(patient, user);
       // Ensure the profile has the latest data from user
-      let needsUpdate = false;
+      let needsUpdate = repairedRequiredFields;
       if (patient.email !== user.email) {
         patient.email = user.email;
         needsUpdate = true;
@@ -139,6 +219,11 @@ export const updatePatientProfile = async (req, res) => {
     delete updates.patientPassNo;
     delete updates.patientId;
     delete updates.dateOfRegistration;
+    if (updates.firstName !== undefined && !updates.firstName?.trim()) delete updates.firstName;
+    if (updates.lastName !== undefined && !updates.lastName?.trim()) updates.lastName = 'User';
+    if (updates.address !== undefined && !updates.address?.trim()) updates.address = 'Not provided';
+    if (updates.phoneNumber !== undefined && !updates.phoneNumber?.trim()) updates.phoneNumber = 'Not provided';
+    if (updates.email !== undefined && !updates.email?.trim()) delete updates.email;
 
     // Find patient
     let patient = await Patient.findOne({ userId });
@@ -165,6 +250,8 @@ export const updatePatientProfile = async (req, res) => {
         data: patient,
       });
     }
+
+    await ensurePatientRequiredFields(patient, await User.findById(userId));
 
     // Update patient fields
     Object.keys(updates).forEach(key => {
