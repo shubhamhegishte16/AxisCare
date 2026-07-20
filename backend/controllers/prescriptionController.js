@@ -3,8 +3,23 @@ import { notifyPharmacists } from '../utils/pharmacyNotify.js';
 
 const generatePrescriptionId = async () => {
   const currentYear = new Date().getFullYear();
-  const count = await Prescription.countDocuments();
-  return `RX-${currentYear}-${1000 + count + 1}`;
+  const latest = await Prescription.findOne({
+    prescriptionId: { $regex: `^RX-${currentYear}-` },
+  }).sort({ createdAt: -1 }).select('prescriptionId');
+
+  const latestNumber = latest?.prescriptionId
+    ? parseInt(latest.prescriptionId.split('-').pop(), 10)
+    : 1000;
+
+  let nextNumber = Number.isFinite(latestNumber) ? latestNumber + 1 : 1001;
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const prescriptionId = `RX-${currentYear}-${nextNumber + attempt}`;
+    const exists = await Prescription.exists({ prescriptionId });
+    if (!exists) return prescriptionId;
+  }
+
+  return `RX-${currentYear}-${Date.now()}`;
 };
 
 // POST /api/prescriptions
@@ -21,6 +36,25 @@ export const createPrescription = async (req, res) => {
       medicines, vitals, status
     } = req.body;
 
+    if (!appointmentId || !patientName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select a completed appointment before creating a prescription.',
+      });
+    }
+
+    const sanitizedMedicines = Array.isArray(medicines)
+      ? medicines
+          .filter((medicine) => medicine?.name?.trim())
+          .map((medicine) => ({
+            name: medicine.name.trim(),
+            dosage: medicine.dosage?.trim() || 'As directed',
+            frequency: medicine.frequency?.trim() || 'As directed',
+            duration: medicine.duration?.trim() || 'As directed',
+            instructions: medicine.instructions?.trim() || '',
+          }))
+      : [];
+
     const prescriptionId = await generatePrescriptionId();
 
     const newPrescription = new Prescription({
@@ -29,8 +63,8 @@ export const createPrescription = async (req, res) => {
       doctorId,
       doctorName,
       patientName,
-      patientAge,
-      patientGender,
+      patientAge: patientAge || 'Not provided',
+      patientGender: patientGender || 'Prefer not to say',
       patientContact,
       department,
       visitType,
@@ -43,7 +77,7 @@ export const createPrescription = async (req, res) => {
       dietAdvice,
       additionalNotes,
       labTests,
-      medicines,
+      medicines: sanitizedMedicines,
       vitals,
       status: status || 'Draft'
     });
@@ -60,6 +94,20 @@ export const createPrescription = async (req, res) => {
     }
   } catch (error) {
     console.error('Error in createPrescription:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: Object.values(error.errors).map((err) => err.message).join(', '),
+        error: error.message,
+      });
+    }
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Prescription ID conflict. Please try generating again.',
+        error: error.message,
+      });
+    }
     res.status(500).json({ success: false, message: 'Failed to save prescription', error: error.message });
   }
 };
