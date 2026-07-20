@@ -12,7 +12,7 @@ export const roleConfig = {
   admin: {
     label: 'Admin',
     icon: ShieldCheck,
-    dashboard: '/admin',
+    dashboard: '/admin/dashboard',
   },
   doctor: {
     label: 'Doctor',
